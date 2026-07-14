@@ -1,0 +1,17 @@
+{
+  "name": "inbox-to-md",
+  "version": "0.1.0",
+  "description": "Convert inbox messages to Markdown",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}
