@@ -86,7 +86,7 @@ function chooseTargetPath(dir: string, parsed: ParsedMail, fetchDate: Date): { p
   return { path, alreadySynced: false };
 }
 
-async function syncAccount(account: ImapAccount): Promise<SyncCounts> {
+async function syncAccount(account: ImapAccount, since: Date): Promise<SyncCounts> {
   const counts: SyncCounts = { written: 0, skipped: 0, errors: 0 };
   const dir = account.syncPath;
   mkdirSync(dir, { recursive: true });
@@ -97,7 +97,6 @@ async function syncAccount(account: ImapAccount): Promise<SyncCounts> {
   try {
     const lock = await client.getMailboxLock('INBOX');
     try {
-      const since = computeSinceDate();
       const uids = await client.search({ since }, { uid: true });
       if (!uids || uids.length === 0) return counts;
 
@@ -145,20 +144,19 @@ async function syncAccount(account: ImapAccount): Promise<SyncCounts> {
 
 // Syncs every account, isolating failures: one broken account logs loudly and
 // the rest still run. Returns true only when everything was fully clean.
-export async function runSync(config: Config): Promise<boolean> {
+export async function runSync(config: Config, since: Date = computeSinceDate()): Promise<boolean> {
   if (config.accounts.length === 0) {
     console.error('No accounts configured. Run `npm run auth` to add one.');
     return false;
   }
 
-  const since = computeSinceDate();
   console.log(dim(`Syncing INBOX mail since ${since.toDateString()}`));
 
   let allOk = true;
   const totals: SyncCounts = { written: 0, skipped: 0, errors: 0 };
   for (const account of config.accounts) {
     try {
-      const counts = await syncAccount(account);
+      const counts = await syncAccount(account, since);
       totals.written += counts.written;
       totals.skipped += counts.skipped;
       totals.errors += counts.errors;

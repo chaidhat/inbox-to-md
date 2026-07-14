@@ -10,6 +10,12 @@ npm run auth   # interactive TUI: add/edit/delete IMAP accounts and their sync p
 npm start      # sync all INBOX mail from this month and last month
 ```
 
+To sync from a specific date instead of the default (1st of last month):
+
+```sh
+npm start -- --since 2026-01-01
+```
+
 `npm run auth` verifies credentials by logging in over IMAP before saving.
 Accounts are stored in `~/.config/inbox-to-md/config.json` (created with
 `0600` permissions — passwords are stored in plaintext, keep this file private).
