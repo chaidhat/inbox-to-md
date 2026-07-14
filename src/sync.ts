@@ -1,11 +1,12 @@
-// `npm start` — sync engine. For each configured account, fetches INBOX mail
-// received this month or last month and writes one markdown file per email
-// into the account's sync path. Idempotent: emails already on disk (matched
-// by message-id in the files' frontmatter) are skipped without re-downloading
-// their bodies.
+// `npm start` — sync engine. For each configured account, fetches mail from
+// INBOX and the Sent mailbox (received this month or last month by default)
+// and writes one markdown file per email into the account's sync path.
+// Idempotent: emails already on disk (matched by message-id in the files'
+// frontmatter) are skipped without re-downloading their bodies.
 
 import { closeSync, existsSync, mkdirSync, openSync, readSync, readdirSync, renameSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import type { ImapFlow } from 'imapflow';
 import { simpleParser, type ParsedMail } from 'mailparser';
 import { bold, dim, green, red } from './ansi.js';
 import type { Config, ImapAccount } from './config.js';
@@ -86,57 +87,88 @@ function chooseTargetPath(dir: string, parsed: ParsedMail, fetchDate: Date): { p
   return { path, alreadySynced: false };
 }
 
+// Locates the account's Sent mailbox: the RFC 6154 special-use flag when the
+// server provides it, else the usual names (Sent, Sent Mail, Sent Items, …).
+// Returns null when nothing matches — some servers simply have no Sent box.
+async function findSentMailbox(client: ImapFlow): Promise<string | null> {
+  const boxes = await client.list();
+  const bySpecialUse = boxes.find((b) => b.specialUse === '\\Sent');
+  if (bySpecialUse) return bySpecialUse.path;
+  const byName = boxes.find((b) => /^sent( messages| items| mail)?$/i.test(b.name));
+  return byName ? byName.path : null;
+}
+
+async function syncMailbox(
+  client: ImapFlow,
+  mailbox: string,
+  since: Date,
+  dir: string,
+  seen: Set<string>,
+  counts: SyncCounts,
+): Promise<void> {
+  const lock = await client.getMailboxLock(mailbox);
+  try {
+    const uids = await client.search({ since }, { uid: true });
+    if (!uids || uids.length === 0) return;
+
+    // Phase A: envelopes only. Filter out already-synced message-ids before
+    // downloading anything heavy — on re-runs (the common case) this means
+    // an unchanged mailbox costs envelopes, never full bodies.
+    const newUids: number[] = [];
+    for await (const msg of client.fetch(uids, { envelope: true }, { uid: true })) {
+      const messageId = (msg.envelope?.messageId ?? '').trim();
+      if (messageId !== '' && seen.has(messageId)) {
+        counts.skipped++;
+        continue;
+      }
+      if (messageId !== '') seen.add(messageId); // dedupes duplicates within this run too
+      newUids.push(msg.uid);
+    }
+    if (newUids.length === 0) return; // imapflow rejects an empty fetch range
+
+    // Phase B: full source for new mail only.
+    for await (const msg of client.fetch(newUids, { source: true }, { uid: true })) {
+      try {
+        if (!msg.source) throw new Error('server returned no message source');
+        const parsed = await simpleParser(msg.source);
+        const { path, alreadySynced } = chooseTargetPath(dir, parsed, new Date());
+        if (alreadySynced) {
+          counts.skipped++;
+          continue;
+        }
+        writeFileAtomic(path, renderEmail(parsed, new Date(), mailbox));
+        counts.written++;
+      } catch (err) {
+        counts.errors++;
+        const detail = err instanceof Error ? err.message : String(err);
+        console.error(red(`  error on ${mailbox} uid ${msg.uid}: ${detail}`));
+      }
+    }
+  } finally {
+    lock.release();
+  }
+}
+
 async function syncAccount(account: ImapAccount, since: Date): Promise<SyncCounts> {
   const counts: SyncCounts = { written: 0, skipped: 0, errors: 0 };
   const dir = account.syncPath;
   mkdirSync(dir, { recursive: true });
+  // Shared across mailboxes, so a message that lives in both INBOX and Sent
+  // (e.g. mail to yourself) is written once. INBOX is synced first, so the
+  // received copy wins.
   const seen = collectExistingMessageIds(dir);
 
   const client = createImapClient(account);
   await client.connect();
   try {
-    const lock = await client.getMailboxLock('INBOX');
-    try {
-      const uids = await client.search({ since }, { uid: true });
-      if (!uids || uids.length === 0) return counts;
-
-      // Phase A: envelopes only. Filter out already-synced message-ids before
-      // downloading anything heavy — on re-runs (the common case) this means
-      // an unchanged inbox costs envelopes, never full bodies.
-      const newUids: number[] = [];
-      for await (const msg of client.fetch(uids, { envelope: true }, { uid: true })) {
-        const messageId = (msg.envelope?.messageId ?? '').trim();
-        if (messageId !== '' && seen.has(messageId)) {
-          counts.skipped++;
-          continue;
-        }
-        if (messageId !== '') seen.add(messageId); // dedupes duplicates within this run too
-        newUids.push(msg.uid);
-      }
-      if (newUids.length === 0) return counts; // imapflow rejects an empty fetch range
-
-      // Phase B: full source for new mail only.
-      for await (const msg of client.fetch(newUids, { source: true }, { uid: true })) {
-        try {
-          if (!msg.source) throw new Error('server returned no message source');
-          const parsed = await simpleParser(msg.source);
-          const { path, alreadySynced } = chooseTargetPath(dir, parsed, new Date());
-          if (alreadySynced) {
-            counts.skipped++;
-            continue;
-          }
-          writeFileAtomic(path, renderEmail(parsed, new Date()));
-          counts.written++;
-        } catch (err) {
-          counts.errors++;
-          const detail = err instanceof Error ? err.message : String(err);
-          console.error(red(`  error on uid ${msg.uid}: ${detail}`));
-        }
-      }
-      return counts;
-    } finally {
-      lock.release();
+    const mailboxes = ['INBOX'];
+    const sent = await findSentMailbox(client);
+    if (sent) mailboxes.push(sent);
+    else console.error(`${account.label}: no Sent mailbox found — syncing INBOX only`);
+    for (const mailbox of mailboxes) {
+      await syncMailbox(client, mailbox, since, dir, seen, counts);
     }
+    return counts;
   } finally {
     await closeImapClient(client);
   }
@@ -150,7 +182,7 @@ export async function runSync(config: Config, since: Date = computeSinceDate()):
     return false;
   }
 
-  console.log(dim(`Syncing INBOX mail since ${since.toDateString()}`));
+  console.log(dim(`Syncing INBOX + Sent mail since ${since.toDateString()}`));
 
   let allOk = true;
   const totals: SyncCounts = { written: 0, skipped: 0, errors: 0 };

@@ -7,7 +7,7 @@ Sync IMAP inboxes to Markdown files — one file per email, with YAML frontmatte
 ```sh
 npm install
 npm run auth   # interactive TUI: add/edit/delete IMAP accounts and their sync paths
-npm start      # sync all INBOX mail from this month and last month
+npm start      # sync INBOX + Sent mail from this month and last month
 ```
 
 To sync from a specific date instead of the default (1st of last month):
@@ -21,7 +21,9 @@ Accounts are stored in `~/.config/inbox-to-md/config.json` (created with
 `0600` permissions — passwords are stored in plaintext, keep this file private).
 
 `npm start` writes each email as `YYYY-MM-DD-subject-slug.md` into the
-account's configured sync path. Re-runs are idempotent: emails already on
+account's configured sync path, covering both INBOX and the Sent mailbox
+(auto-detected via the IMAP special-use flag or common names); frontmatter
+records which mailbox each email came from. Re-runs are idempotent: emails already on
 disk (matched by `message-id` frontmatter) are skipped, and deleting a file
 re-syncs that email on the next run. Attachments are listed but never
 downloaded. One failing account doesn't stop the others; the exit code is

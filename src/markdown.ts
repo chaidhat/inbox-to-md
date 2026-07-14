@@ -55,7 +55,7 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function renderEmail(parsed: ParsedMail, fallbackDate: Date): string {
+export function renderEmail(parsed: ParsedMail, fallbackDate: Date, mailbox: string): string {
   const date = parsed.date ?? fallbackDate;
   const messageId = (parsed.messageId ?? '').trim();
 
@@ -74,6 +74,7 @@ export function renderEmail(parsed: ParsedMail, fallbackDate: Date): string {
   out += `subject: ${yamlValue(parsed.subject ?? '')}\n`;
   out += `date: ${yamlValue(date.toISOString())}\n`;
   out += `message-id: ${yamlValue(messageId)}\n`;
+  out += `mailbox: ${yamlValue(mailbox)}\n`;
   out += '---\n\n';
   out += body + '\n';
 

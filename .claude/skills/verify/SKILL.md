@@ -31,15 +31,22 @@ Gotchas:
 
 ## Fake IMAP server
 
-No real credentials needed: a ~150-line Node `net` server speaking minimal
+No real credentials needed: a ~200-line Node `net` server speaking minimal
 IMAP4rev1 satisfies imapflow over plaintext (account with `tls: no`). It must
 answer: greeting `* OK [CAPABILITY IMAP4rev1] ready`, `CAPABILITY`, `LOGIN`
-(reply `NO [AUTHENTICATIONFAILED]` to test the wrong-password path), `SELECT`
-(EXISTS/FLAGS/UIDVALIDITY/UIDNEXT + `OK [READ-WRITE]`), `UID SEARCH`
+(reply `NO [AUTHENTICATIONFAILED]` to test the wrong-password path), `LIST`,
+`SELECT` (EXISTS/FLAGS/UIDVALIDITY/UIDNEXT + `OK [READ-WRITE]`), `UID SEARCH`
 (`* SEARCH 1 2 …`), `UID FETCH` with ENVELOPE (`(NIL NIL NIL NIL NIL NIL NIL
 NIL NIL "<message-id>")` — only message-id is read in phase A) and with
 BODY.PEEK[] (literal `{N}\r\n<source>)`), `LOGOUT`. A known-good copy from a
 past session: written as `fake-imap.mjs` in the session scratchpad.
+
+LIST gotcha: imapflow first sends `LIST "" ""` (root/delimiter discovery) and
+builds every mailbox path from the reply — that command must return ONLY
+`* LIST (\Noselect) "/" ""`, not the mailbox list, or paths get a bogus
+prefix and SELECT hits the wrong mailbox. Answer the real `LIST … *` with the
+mailbox lines (mark Sent with the `\Sent` flag). Make unknown SELECT return
+`NO` so a wrong path fails loudly instead of silently syncing INBOX twice.
 
 ## Flows worth driving
 
