@@ -6,12 +6,20 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
+    "auth": "tsx src/auth.ts",
     "dev": "tsx src/index.ts",
-    "start": "node dist/index.js"
+    "start": "tsx src/index.ts"
   },
   "license": "MIT",
   "devDependencies": {
+    "@types/mailparser": "^3.4.6",
+    "@types/turndown": "^5.0.6",
     "tsx": "^4.19.0",
     "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "imapflow": "^1.4.7",
+    "mailparser": "^3.9.14",
+    "turndown": "^7.2.4"
   }
 }
