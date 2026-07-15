@@ -24,6 +24,25 @@ interface SyncCounts {
   errors: number;
 }
 
+// In-place progress line, TTY only: piped output stays clean (matching the
+// ansi.ts helpers, which also degrade to plain text off-TTY). Overwrites
+// itself with \r and is cleared before any real line is printed.
+class ProgressLine {
+  private active = false;
+
+  update(text: string): void {
+    if (!process.stdout.isTTY) return;
+    process.stdout.write(`\r\x1b[2K  ${dim(text)}`);
+    this.active = true;
+  }
+
+  clear(): void {
+    if (!this.active) return;
+    process.stdout.write('\r\x1b[2K');
+    this.active = false;
+  }
+}
+
 export function computeSinceDate(now: Date = new Date()): Date {
   // Month -1 in January normalizes to December of the prior year.
   return new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -80,9 +99,12 @@ function chooseTargetPath(dir: string, parsed: ParsedMail, fetchDate: Date): { p
 
   // Message-id dedupe already ran (phase A), so an existing file here is a
   // different email that happens to share date + subject — pick a free name.
+  // The counter goes in the suffix slot, after the slug: appending it to the
+  // subject doesn't work because slugify truncates long subjects to 80 chars,
+  // slicing the counter off and looping forever on the same name.
   let path = join(dir, buildFilename(date, subject));
   for (let n = 2; existsSync(path); n++) {
-    path = join(dir, buildFilename(date, `${subject} ${n}`));
+    path = join(dir, buildFilename(date, subject, String(n)));
   }
   return { path, alreadySynced: false };
 }
@@ -107,6 +129,7 @@ async function syncMailbox(
   counts: SyncCounts,
 ): Promise<void> {
   const lock = await client.getMailboxLock(mailbox);
+  const progress = new ProgressLine();
   try {
     const uids = await client.search({ since }, { uid: true });
     if (!uids || uids.length === 0) return;
@@ -115,7 +138,9 @@ async function syncMailbox(
     // downloading anything heavy — on re-runs (the common case) this means
     // an unchanged mailbox costs envelopes, never full bodies.
     const newUids: number[] = [];
+    let checked = 0;
     for await (const msg of client.fetch(uids, { envelope: true }, { uid: true })) {
+      progress.update(`${mailbox}: checking ${++checked}/${uids.length}`);
       const messageId = (msg.envelope?.messageId ?? '').trim();
       if (messageId !== '' && seen.has(messageId)) {
         counts.skipped++;
@@ -126,10 +151,16 @@ async function syncMailbox(
     }
     if (newUids.length === 0) return; // imapflow rejects an empty fetch range
 
-    // Phase B: full source for new mail only.
-    for await (const msg of client.fetch(newUids, { source: true }, { uid: true })) {
+    // Phase B: full source for new mail only. One fetch per message rather
+    // than a single bulk FETCH: the progress line can update before each
+    // download (a bulk fetch only yields when a body has fully arrived, so
+    // a large email looks like a hang), and one bad message can't stall the
+    // entire pipeline.
+    for (const [i, uid] of newUids.entries()) {
+      progress.update(`${mailbox}: downloading ${i + 1}/${newUids.length}`);
       try {
-        if (!msg.source) throw new Error('server returned no message source');
+        const msg = await client.fetchOne(uid, { source: true }, { uid: true });
+        if (!msg || !msg.source) throw new Error('server returned no message source');
         const parsed = await simpleParser(msg.source);
         const { path, alreadySynced } = chooseTargetPath(dir, parsed, new Date());
         if (alreadySynced) {
@@ -141,10 +172,12 @@ async function syncMailbox(
       } catch (err) {
         counts.errors++;
         const detail = err instanceof Error ? err.message : String(err);
-        console.error(red(`  error on ${mailbox} uid ${msg.uid}: ${detail}`));
+        progress.clear(); // don't let the error line splice into the progress line
+        console.error(red(`  error on ${mailbox} uid ${uid}: ${detail}`));
       }
     }
   } finally {
+    progress.clear();
     lock.release();
   }
 }
