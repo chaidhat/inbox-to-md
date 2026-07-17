@@ -10,12 +10,12 @@
 
 import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import type { ImapFlow } from 'imapflow';
-import { simpleParser, type ParsedMail } from 'mailparser';
+import type { ImapFlow, MessageEnvelopeObject } from 'imapflow';
 import { bold, dim, green, red } from './ansi.js';
 import type { Config, ImapAccount } from './config.js';
 import { closeImapClient, createImapClient, describeImapError } from './imap.js';
-import { buildFilename, extractFrontmatterValue, extractMessageId, fallbackHash, readFrontmatterHead, renderEmail } from './markdown.js';
+import { buildFilename, extractFrontmatterValue, extractMessageId, fallbackHash, readFrontmatterHead, renderEmail, type EmailContent } from './markdown.js';
+import { collectAttachments, decodeTextPart, findTextPart } from './mime.js';
 
 interface SyncCounts {
   written: number;
@@ -122,20 +122,19 @@ function writeFileAtomic(path: string, content: string): void {
 
 function chooseTargetPath(
   dir: string,
-  parsed: ParsedMail,
+  email: EmailContent,
   fetchDate: Date,
   existing: Map<string, ExistingFile>,
   forceRewrite: boolean,
 ): { path: string; alreadySynced: boolean } {
-  const date = parsed.date ?? fetchDate;
-  const subject = parsed.subject ?? '';
-  const messageId = (parsed.messageId ?? '').trim();
+  const date = email.date ?? fetchDate;
+  const subject = email.subject;
+  const messageId = email.messageId;
 
   if (messageId === '') {
     // No message-id to dedupe on, so the filename itself is the identity:
     // deterministic hash of from/date/subject means existsSync === synced.
-    const from = parsed.from?.text ?? '';
-    const name = buildFilename(date, subject, fallbackHash(from, date.toISOString(), subject));
+    const name = buildFilename(date, subject, fallbackHash(email.from, date.toISOString(), subject));
     const path = join(dir, name);
     return { path, alreadySynced: !forceRewrite && existsSync(path) };
   }
@@ -157,6 +156,44 @@ function chooseTargetPath(
     path = join(dir, buildFilename(date, subject, String(n)));
   }
   return { path, alreadySynced: false };
+}
+
+function formatAddressList(list: MessageEnvelopeObject['from']): string {
+  return (list ?? [])
+    .map((a) => (a.name ? `${a.name} <${a.address ?? ''}>` : (a.address ?? '')))
+    .join(', ');
+}
+
+// Downloads and assembles one email using body structure instead of full
+// source: the envelope covers the headers, the structure describes the
+// attachments, and only the single text part is actually fetched — so
+// attachment bytes never leave the server.
+async function downloadEmail(client: ImapFlow, uid: number): Promise<EmailContent> {
+  const msg = await client.fetchOne(uid, { envelope: true, bodyStructure: true }, { uid: true });
+  if (!msg || !msg.envelope || !msg.bodyStructure) throw new Error('server returned no envelope/body structure');
+
+  let text = '';
+  let html = '';
+  const textRef = findTextPart(msg.bodyStructure);
+  if (textRef) {
+    const partMsg = await client.fetchOne(uid, { bodyParts: [textRef.part] }, { uid: true });
+    const raw = partMsg ? partMsg.bodyParts?.get(textRef.part) : undefined;
+    if (!raw) throw new Error(`server returned no body part ${textRef.part}`);
+    const decoded = decodeTextPart(raw, textRef.encoding, textRef.charset);
+    if (textRef.isHtml) html = decoded;
+    else text = decoded;
+  }
+
+  return {
+    from: formatAddressList(msg.envelope.from),
+    to: formatAddressList(msg.envelope.to),
+    subject: msg.envelope.subject ?? '',
+    date: msg.envelope.date ?? null,
+    messageId: (msg.envelope.messageId ?? '').trim(),
+    text,
+    html,
+    attachments: collectAttachments(msg.bodyStructure),
+  };
 }
 
 // Locates the account's Sent mailbox: the RFC 6154 special-use flag when the
@@ -205,23 +242,20 @@ async function syncMailbox(
     }
     if (newUids.length === 0) return; // imapflow rejects an empty fetch range
 
-    // Phase B: full source for new mail only. One fetch per message rather
-    // than a single bulk FETCH: the progress line can update before each
-    // download (a bulk fetch only yields when a body has fully arrived, so
-    // a large email looks like a hang), and one bad message can't stall the
-    // entire pipeline.
+    // Phase B: body text for new mail only (attachments stay on the server —
+    // see downloadEmail). One message at a time rather than a single bulk
+    // FETCH: the progress line can update before each download, and one bad
+    // message can't stall the entire pipeline.
     for (const [i, uid] of newUids.entries()) {
       progress.update(`${mailbox}: downloading ${i + 1}/${newUids.length}`);
       try {
-        const msg = await client.fetchOne(uid, { source: true }, { uid: true });
-        if (!msg || !msg.source) throw new Error('server returned no message source');
-        const parsed = await simpleParser(msg.source);
-        const { path, alreadySynced } = chooseTargetPath(dir, parsed, new Date(), existing, forceRewrite);
+        const email = await downloadEmail(client, uid);
+        const { path, alreadySynced } = chooseTargetPath(dir, email, new Date(), existing, forceRewrite);
         if (alreadySynced) {
           counts.skipped++;
           continue;
         }
-        writeFileAtomic(path, renderEmail(parsed, new Date(), mailbox));
+        writeFileAtomic(path, renderEmail(email, new Date(), mailbox));
         counts.written++;
       } catch (err) {
         counts.errors++;

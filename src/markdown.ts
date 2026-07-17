@@ -4,10 +4,18 @@
 
 import { createHash } from 'crypto';
 import { closeSync, openSync, readSync } from 'fs';
-import type { AddressObject, ParsedMail } from 'mailparser';
 import TurndownService from 'turndown';
+import type { AttachmentInfo } from './mime.js';
 
 const turndown = new TurndownService();
+
+// Inline images arrive as data: URIs — megabytes of base64 that a text
+// digest can't use. Replace them with a marker instead of copying the
+// payload into the markdown.
+turndown.addRule('dataUriImage', {
+  filter: (node) => node.nodeName === 'IMG' && /^data:/i.test(node.getAttribute('src') ?? ''),
+  replacement: () => '*(inline image)*',
+});
 
 // Every frontmatter value goes through JSON.stringify: a JSON string is a
 // valid YAML double-quoted scalar, and it escapes quotes, newlines, and
@@ -17,10 +25,18 @@ function yamlValue(s: string): string {
   return JSON.stringify(s);
 }
 
-function addressText(a: AddressObject | AddressObject[] | undefined): string {
-  if (!a) return '';
-  const list = Array.isArray(a) ? a : [a];
-  return list.map((x) => x.text).join(', ');
+// Everything renderEmail needs, decoupled from any IMAP/parser library:
+// the sync engine assembles this from the envelope, body structure, and the
+// one downloaded text part.
+export interface EmailContent {
+  from: string;
+  to: string;
+  subject: string;
+  date: Date | null;
+  messageId: string;
+  text: string; // decoded text/plain body, '' if the email has none
+  html: string; // decoded text/html body, used only when text is empty
+  attachments: AttachmentInfo[];
 }
 
 export function slugify(s: string): string {
@@ -56,34 +72,32 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function renderEmail(parsed: ParsedMail, fallbackDate: Date, mailbox: string): string {
-  const date = parsed.date ?? fallbackDate;
-  const messageId = (parsed.messageId ?? '').trim();
+export function renderEmail(email: EmailContent, fallbackDate: Date, mailbox: string): string {
+  const date = email.date ?? fallbackDate;
 
   let body: string;
-  if (parsed.text && parsed.text.trim() !== '') {
-    body = parsed.text.trim();
-  } else if (parsed.html) {
-    body = turndown.turndown(parsed.html).trim() || '*(no body)*';
+  if (email.text.trim() !== '') {
+    body = email.text.trim();
+  } else if (email.html !== '') {
+    body = turndown.turndown(email.html).trim() || '*(no body)*';
   } else {
     body = '*(no body)*';
   }
 
   let out = '---\n';
-  out += `from: ${yamlValue(addressText(parsed.from))}\n`;
-  out += `to: ${yamlValue(addressText(parsed.to))}\n`;
-  out += `subject: ${yamlValue(parsed.subject ?? '')}\n`;
+  out += `from: ${yamlValue(email.from)}\n`;
+  out += `to: ${yamlValue(email.to)}\n`;
+  out += `subject: ${yamlValue(email.subject)}\n`;
   out += `date: ${yamlValue(date.toISOString())}\n`;
-  out += `message-id: ${yamlValue(messageId)}\n`;
+  out += `message-id: ${yamlValue(email.messageId)}\n`;
   out += `mailbox: ${yamlValue(mailbox)}\n`;
   out += '---\n\n';
   out += body + '\n';
 
-  if (parsed.attachments.length > 0) {
+  if (email.attachments.length > 0) {
     out += '\n## Attachments\n\n';
-    for (const att of parsed.attachments) {
-      const name = att.filename || '(unnamed)';
-      out += `- ${name} (${formatSize(att.size)}, ${att.contentType})\n`;
+    for (const att of email.attachments) {
+      out += `- ${att.name} (${formatSize(att.size)}, ${att.contentType})\n`;
     }
   }
   return out;
