@@ -1,0 +1,1253 @@
+
+> inbox-to-md@0.1.0 compact
+> tsx src/compact.ts
+
+compacting 3059 emails to <= 8000 tokens with claude-opus-4-8
+layer 0: counted tokens 8/3059layer 0: counted tokens 16/3059layer 0: counted tokens 24/3059layer 0: counted tokens 32/3059layer 0: counted tokens 40/3059layer 0: counted tokens 48/3059layer 0: counted tokens 56/3059layer 0: counted tokens 64/3059layer 0: counted tokens 72/3059layer 0: counted tokens 80/3059layer 0: counted tokens 88/3059layer 0: counted tokens 96/3059layer 0: counted tokens 104/3059layer 0: counted tokens 112/3059layer 0: counted tokens 120/3059layer 0: counted tokens 128/3059layer 0: counted tokens 136/3059layer 0: counted tokens 144/3059layer 0: counted tokens 152/3059layer 0: counted tokens 160/3059layer 0: counted tokens 168/3059layer 0: counted tokens 176/3059layer 0: counted tokens 184/3059layer 0: counted tokens 192/3059layer 0: counted tokens 200/3059layer 0: counted tokens 208/3059layer 0: counted tokens 216/3059layer 0: counted tokens 224/3059layer 0: counted tokens 232/3059layer 0: counted tokens 240/3059layer 0: counted tokens 248/3059layer 0: counted tokens 256/3059layer 0: counted tokens 264/3059layer 0: counted tokens 272/3059layer 0: counted tokens 280/3059layer 0: counted tokens 288/3059layer 0: counted tokens 296/3059layer 0: counted tokens 304/3059layer 0: counted tokens 312/3059layer 0: counted tokens 320/3059layer 0: counted tokens 328/3059layer 0: counted tokens 336/3059layer 0: counted tokens 344/3059layer 0: counted tokens 352/3059layer 0: counted tokens 360/3059layer 0: counted tokens 368/3059layer 0: counted tokens 376/3059layer 0: counted tokens 384/3059layer 0: counted tokens 392/3059layer 0: counted tokens 400/3059layer 0: counted tokens 408/3059layer 0: counted tokens 416/3059layer 0: counted tokens 424/3059layer 0: counted tokens 432/3059layer 0: counted tokens 440/3059layer 0: counted tokens 448/3059layer 0: counted tokens 456/3059layer 0: counted tokens 464/3059layer 0: counted tokens 472/3059layer 0: counted tokens 480/3059layer 0: counted tokens 488/3059layer 0: counted tokens 496/3059layer 0: counted tokens 504/3059layer 0: counted tokens 512/3059layer 0: counted tokens 520/3059layer 0: counted tokens 528/3059layer 0: counted tokens 536/3059layer 0: counted tokens 544/3059layer 0: counted tokens 552/3059layer 0: counted tokens 560/3059layer 0: counted tokens 568/3059layer 0: counted tokens 576/3059layer 0: counted tokens 584/3059layer 0: counted tokens 592/3059layer 0: counted tokens 600/3059layer 0: counted tokens 608/3059layer 0: counted tokens 616/3059layer 0: counted tokens 624/3059layer 0: counted tokens 632/3059layer 0: counted tokens 640/3059layer 0: counted tokens 648/3059layer 0: counted tokens 656/3059layer 0: counted tokens 664/3059layer 0: counted tokens 672/3059layer 0: counted tokens 680/3059layer 0: counted tokens 688/3059layer 0: counted tokens 696/3059layer 0: counted tokens 704/3059layer 0: counted tokens 712/3059layer 0: counted tokens 720/3059layer 0: counted tokens 728/3059layer 0: counted tokens 736/3059layer 0: counted tokens 744/3059layer 0: counted tokens 752/3059layer 0: counted tokens 760/3059layer 0: counted tokens 768/3059layer 0: counted tokens 776/3059layer 0: counted tokens 784/3059layer 0: counted tokens 792/3059layer 0: counted tokens 800/3059layer 0: counted tokens 808/3059layer 0: counted tokens 816/3059layer 0: counted tokens 824/3059layer 0: counted tokens 832/3059layer 0: counted tokens 840/3059layer 0: counted tokens 848/3059layer 0: counted tokens 856/3059layer 0: counted tokens 864/3059layer 0: counted tokens 872/3059layer 0: counted tokens 880/3059layer 0: counted tokens 888/3059layer 0: counted tokens 896/3059layer 0: counted tokens 904/3059layer 0: counted tokens 912/3059layer 0: counted tokens 920/3059layer 0: counted tokens 928/3059layer 0: counted tokens 936/3059layer 0: counted tokens 944/3059layer 0: counted tokens 952/3059layer 0: counted tokens 960/3059layer 0: counted tokens 968/3059layer 0: counted tokens 976/3059layer 0: counted tokens 984/3059layer 0: counted tokens 992/3059layer 0: counted tokens 1000/3059layer 0: counted tokens 1008/3059layer 0: counted tokens 1016/3059layer 0: counted tokens 1024/3059layer 0: counted tokens 1032/3059layer 0: counted tokens 1040/3059layer 0: counted tokens 1048/3059layer 0: counted tokens 1056/3059layer 0: counted tokens 1064/3059layer 0: counted tokens 1072/3059layer 0: counted tokens 1080/3059layer 0: counted tokens 1088/3059layer 0: counted tokens 1096/3059layer 0: counted tokens 1104/3059layer 0: counted tokens 1112/3059layer 0: counted tokens 1120/3059layer 0: counted tokens 1128/3059layer 0: counted tokens 1136/3059layer 0: counted tokens 1144/3059layer 0: counted tokens 1152/3059layer 0: counted tokens 1160/3059layer 0: counted tokens 1168/3059layer 0: counted tokens 1176/3059layer 0: counted tokens 1184/3059layer 0: counted tokens 1192/3059layer 0: counted tokens 1200/3059layer 0: counted tokens 1208/3059layer 0: counted tokens 1216/3059layer 0: counted tokens 1224/3059layer 0: counted tokens 1232/3059layer 0: counted tokens 1240/3059layer 0: counted tokens 1248/3059layer 0: counted tokens 1256/3059layer 0: counted tokens 1264/3059layer 0: counted tokens 1272/3059layer 0: counted tokens 1280/3059layer 0: counted tokens 1288/3059layer 0: counted tokens 1296/3059layer 0: counted tokens 1304/3059layer 0: counted tokens 1312/3059layer 0: counted tokens 1320/3059layer 0: counted tokens 1328/3059layer 0: counted tokens 1336/3059layer 0: counted tokens 1344/3059layer 0: counted tokens 1352/3059layer 0: counted tokens 1360/3059layer 0: counted tokens 1368/3059layer 0: counted tokens 1376/3059layer 0: counted tokens 1384/3059layer 0: counted tokens 1392/3059layer 0: counted tokens 1400/3059layer 0: counted tokens 1408/3059layer 0: counted tokens 1416/3059layer 0: counted tokens 1424/3059layer 0: counted tokens 1432/3059layer 0: counted tokens 1440/3059layer 0: counted tokens 1448/3059layer 0: counted tokens 1456/3059layer 0: counted tokens 1464/3059layer 0: counted tokens 1472/3059layer 0: counted tokens 1480/3059layer 0: counted tokens 1488/3059layer 0: counted tokens 1496/3059layer 0: counted tokens 1504/3059layer 0: counted tokens 1512/3059layer 0: counted tokens 1520/3059layer 0: counted tokens 1528/3059layer 0: counted tokens 1536/3059layer 0: counted tokens 1544/3059layer 0: counted tokens 1552/3059layer 0: counted tokens 1560/3059layer 0: counted tokens 1568/3059layer 0: counted tokens 1576/3059layer 0: counted tokens 1584/3059layer 0: counted tokens 1592/3059layer 0: counted tokens 1600/3059layer 0: counted tokens 1608/3059layer 0: counted tokens 1616/3059layer 0: counted tokens 1624/3059layer 0: counted tokens 1632/3059layer 0: counted tokens 1640/3059layer 0: counted tokens 1648/3059layer 0: counted tokens 1656/3059layer 0: counted tokens 1664/3059layer 0: counted tokens 1672/3059layer 0: counted tokens 1680/3059layer 0: counted tokens 1688/3059layer 0: counted tokens 1696/3059layer 0: counted tokens 1704/3059layer 0: counted tokens 1712/3059layer 0: counted tokens 1720/3059layer 0: counted tokens 1728/3059layer 0: counted tokens 1736/3059layer 0: counted tokens 1744/3059layer 0: counted tokens 1752/3059layer 0: counted tokens 1760/3059layer 0: counted tokens 1768/3059layer 0: counted tokens 1776/3059layer 0: counted tokens 1784/3059layer 0: counted tokens 1792/3059layer 0: counted tokens 1800/3059layer 0: counted tokens 1808/3059layer 0: counted tokens 1816/3059layer 0: counted tokens 1824/3059layer 0: counted tokens 1832/3059layer 0: counted tokens 1840/3059layer 0: counted tokens 1848/3059layer 0: counted tokens 1856/3059layer 0: counted tokens 1864/3059layer 0: counted tokens 1872/3059layer 0: counted tokens 1880/3059layer 0: counted tokens 1888/3059layer 0: counted tokens 1896/3059layer 0: counted tokens 1904/3059layer 0: counted tokens 1912/3059layer 0: counted tokens 1920/3059layer 0: counted tokens 1928/3059layer 0: counted tokens 1936/3059layer 0: counted tokens 1944/3059layer 0: counted tokens 1952/3059layer 0: counted tokens 1960/3059layer 0: counted tokens 1968/3059layer 0: counted tokens 1976/3059layer 0: counted tokens 1984/3059layer 0: counted tokens 1992/3059layer 0: counted tokens 2000/3059layer 0: counted tokens 2008/3059layer 0: counted tokens 2016/3059layer 0: counted tokens 2024/3059layer 0: counted tokens 2032/3059layer 0: counted tokens 2040/3059layer 0: counted tokens 2048/3059layer 0: counted tokens 2056/3059layer 0: counted tokens 2064/3059layer 0: counted tokens 2072/3059layer 0: counted tokens 2080/3059layer 0: counted tokens 2088/3059layer 0: counted tokens 2096/3059layer 0: counted tokens 2104/3059layer 0: counted tokens 2112/3059layer 0: counted tokens 2120/3059layer 0: counted tokens 2128/3059layer 0: counted tokens 2136/3059layer 0: counted tokens 2144/3059layer 0: counted tokens 2152/3059layer 0: counted tokens 2160/3059layer 0: counted tokens 2168/3059layer 0: counted tokens 2176/3059layer 0: counted tokens 2184/3059layer 0: counted tokens 2192/3059layer 0: counted tokens 2200/3059layer 0: counted tokens 2208/3059layer 0: counted tokens 2216/3059layer 0: counted tokens 2224/3059layer 0: counted tokens 2232/3059layer 0: counted tokens 2240/3059layer 0: counted tokens 2248/3059layer 0: counted tokens 2256/3059layer 0: counted tokens 2264/3059layer 0: counted tokens 2272/3059layer 0: counted tokens 2280/3059layer 0: counted tokens 2288/3059layer 0: counted tokens 2296/3059layer 0: counted tokens 2304/3059layer 0: counted tokens 2312/3059layer 0: counted tokens 2320/3059layer 0: counted tokens 2328/3059layer 0: counted tokens 2336/3059layer 0: counted tokens 2344/3059layer 0: counted tokens 2352/3059layer 0: counted tokens 2360/3059layer 0: counted tokens 2368/3059layer 0: counted tokens 2376/3059layer 0: counted tokens 2384/3059layer 0: counted tokens 2392/3059layer 0: counted tokens 2400/3059layer 0: counted tokens 2408/3059layer 0: counted tokens 2416/3059layer 0: counted tokens 2424/3059layer 0: counted tokens 2432/3059layer 0: counted tokens 2440/3059layer 0: counted tokens 2448/3059layer 0: counted tokens 2456/3059layer 0: counted tokens 2464/3059layer 0: counted tokens 2472/3059layer 0: counted tokens 2480/3059layer 0: counted tokens 2488/3059layer 0: counted tokens 2496/3059layer 0: counted tokens 2504/3059layer 0: counted tokens 2512/3059layer 0: counted tokens 2520/3059layer 0: counted tokens 2528/3059layer 0: counted tokens 2536/3059layer 0: counted tokens 2544/3059layer 0: counted tokens 2552/3059layer 0: counted tokens 2560/3059layer 0: counted tokens 2568/3059layer 0: counted tokens 2576/3059layer 0: counted tokens 2584/3059layer 0: counted tokens 2592/3059layer 0: counted tokens 2600/3059layer 0: counted tokens 2608/3059layer 0: counted tokens 2616/3059layer 0: counted tokens 2624/3059layer 0: counted tokens 2632/3059layer 0: counted tokens 2640/3059layer 0: counted tokens 2648/3059layer 0: counted tokens 2656/3059layer 0: counted tokens 2664/3059layer 0: counted tokens 2672/3059layer 0: counted tokens 2680/3059layer 0: counted tokens 2688/3059layer 0: counted tokens 2696/3059layer 0: counted tokens 2704/3059layer 0: counted tokens 2712/3059layer 0: counted tokens 2720/3059layer 0: counted tokens 2728/3059layer 0: counted tokens 2736/3059layer 0: counted tokens 2744/3059layer 0: counted tokens 2752/3059layer 0: counted tokens 2760/3059layer 0: counted tokens 2768/3059layer 0: counted tokens 2776/3059layer 0: counted tokens 2784/3059layer 0: counted tokens 2792/3059layer 0: counted tokens 2800/3059layer 0: counted tokens 2808/3059layer 0: counted tokens 2816/3059layer 0: counted tokens 2824/3059layer 0: counted tokens 2832/3059layer 0: counted tokens 2840/3059layer 0: counted tokens 2848/3059layer 0: counted tokens 2856/3059layer 0: counted tokens 2864/3059layer 0: counted tokens 2872/3059layer 0: counted tokens 2880/3059layer 0: counted tokens 2888/3059layer 0: counted tokens 2896/3059layer 0: counted tokens 2904/3059layer 0: counted tokens 2912/3059layer 0: counted tokens 2920/3059layer 0: counted tokens 2928/3059layer 0: counted tokens 2936/3059layer 0: counted tokens 2944/3059layer 0: counted tokens 2952/3059layer 0: counted tokens 2960/3059layer 0: counted tokens 2968/3059layer 0: counted tokens 2976/3059layer 0: counted tokens 2984/3059layer 0: counted tokens 2992/3059layer 0: counted tokens 3000/3059layer 0: counted tokens 3008/3059layer 0: counted tokens 3016/3059layer 0: counted tokens 3024/3059layer 0: counted tokens 3032/3059layer 0: counted tokens 3040/3059layer 0: counted tokens 3048/3059layer 0: counted tokens 3056/3059layer 0: counted tokens 3059/3059
+layer 0: 3059 inputs (8865924 tokens) → 1272 windows
+layer 0: reusing existing window 0
+layer 0: reusing existing window 1
+layer 0: reusing existing window 2
+layer 0: reusing existing window 3
+layer 0: reusing existing window 4
+layer 0: reusing existing window 5
+layer 0: reusing existing window 6
+layer 0: reusing existing window 7
+layer 0: reusing existing window 8
+layer 0: reusing existing window 9
+layer 0: reusing existing window 10
+layer 0: reusing existing window 11
+layer 0: reusing existing window 12
+layer 0: reusing existing window 13
+layer 0: reusing existing window 14
+layer 0: reusing existing window 15
+layer 0: reusing existing window 16
+layer 0: reusing existing window 17
+layer 0: reusing existing window 18
+layer 0: reusing existing window 19
+layer 0: reusing existing window 20
+layer 0: reusing existing window 21
+layer 0: reusing existing window 22
+layer 0: reusing existing window 23
+layer 0: reusing existing window 24
+layer 0: reusing existing window 25
+layer 0: reusing existing window 26
+layer 0: reusing existing window 27
+layer 0: reusing existing window 28
+layer 0: reusing existing window 29
+layer 0: reusing existing window 30
+layer 0: window 31 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 32 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 38 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 37 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 39 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 33 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 36 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 35 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 34 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 45 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 46 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 40 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 43 (165 output tokens)
+layer 0: window 47 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 41 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 42 (267 output tokens)
+layer 0: compacted window 44 (273 output tokens)
+layer 0: window 49 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 50 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 53 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 51 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 52 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 54 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 55 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 48 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 62 (155 output tokens)
+layer 0: compacted window 60 (147 output tokens)
+layer 0: compacted window 57 (167 output tokens)
+layer 0: compacted window 56 (236 output tokens)
+layer 0: compacted window 58 (328 output tokens)
+layer 0: compacted window 63 (767 output tokens)
+layer 0: compacted window 59 (814 output tokens)
+layer 0: compacted window 61 (982 output tokens)
+layer 0: window 71 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 70 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 64 (521 output tokens)
+layer 0: compacted window 66 (413 output tokens)
+layer 0: compacted window 69 (426 output tokens)
+layer 0: compacted window 68 (374 output tokens)
+layer 0: compacted window 65 (791 output tokens)
+layer 0: compacted window 67 (824 output tokens)
+layer 0: window 76 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 78 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 72 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 74 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 75 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 73 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 79 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 77 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 86 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 80 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 84 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 85 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 81 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 87 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 82 (269 output tokens)
+layer 0: compacted window 83 (385 output tokens)
+layer 0: window 94 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 88 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 91 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 89 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 95 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 90 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 93 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 92 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 96 (261 output tokens)
+layer 0: compacted window 98 (332 output tokens)
+layer 0: compacted window 99 (299 output tokens)
+layer 0: compacted window 103 (641 output tokens)
+layer 0: compacted window 97 (613 output tokens)
+layer 0: compacted window 100 (739 output tokens)
+layer 0: compacted window 101 (718 output tokens)
+layer 0: compacted window 102 (888 output tokens)
+layer 0: window 111 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 110 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 109 (93 output tokens)
+layer 0: compacted window 108 (217 output tokens)
+layer 0: compacted window 105 (449 output tokens)
+layer 0: compacted window 106 (498 output tokens)
+layer 0: compacted window 104 (797 output tokens)
+layer 0: compacted window 107 (922 output tokens)
+layer 0: window 119 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 117 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 113 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 118 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 112 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 116 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 114 (111 output tokens)
+layer 0: compacted window 115 (138 output tokens)
+layer 0: window 121 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 120 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 125 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 126 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 127 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 123 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 122 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 124 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 135 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 129 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 128 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 131 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 134 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 130 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 133 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 132 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 136 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 138 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 139 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 143 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 141 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 142 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 137 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 140 (110 output tokens)
+layer 0: window 149 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 147 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 151 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 150 (60 output tokens)
+layer 0: window 148 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 144 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 146 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 145 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 153 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 158 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 155 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 159 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 154 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 152 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 157 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 156 (181 output tokens)
+layer 0: window 161 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 160 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 163 (41 output tokens)
+layer 0: window 166 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 165 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 162 (215 output tokens)
+layer 0: window 167 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 164 (97 output tokens)
+layer 0: window 175 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 168 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 172 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 171 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 170 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 169 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 173 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 174 (106 output tokens)
+layer 0: window 182 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 176 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 183 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 180 (93 output tokens)
+layer 0: window 179 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 177 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 178 (143 output tokens)
+layer 0: compacted window 181 (137 output tokens)
+layer 0: window 186 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 187 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 189 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 191 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 184 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 185 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 188 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 190 (123 output tokens)
+layer 0: window 199 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 193 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 196 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 197 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 194 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 192 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 195 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 198 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 206 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 202 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 203 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 200 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 204 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 201 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 207 (101 output tokens)
+layer 0: compacted window 205 (136 output tokens)
+layer 0: window 214 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 209 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 210 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 213 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 212 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 211 (128 output tokens)
+layer 0: compacted window 208 (99 output tokens)
+layer 0: window 215 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 216 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 217 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 223 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 218 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 221 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 222 (95 output tokens)
+layer 0: compacted window 219 (120 output tokens)
+layer 0: window 220 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 230 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 229 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 226 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 225 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 227 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 231 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 224 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 228 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 233 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 238 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 232 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 234 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 236 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 235 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 239 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 237 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 244 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 242 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 243 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 241 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 247 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 246 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 240 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 245 (51 output tokens)
+layer 0: window 248 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 249 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 250 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 255 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 251 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 252 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 254 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 253 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 260 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 261 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 263 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 262 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 258 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 259 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 256 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 257 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 266 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 264 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 270 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 268 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 271 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 269 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 265 (89 output tokens)
+layer 0: window 267 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 273 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 279 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 272 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 277 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 276 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 275 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 274 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 278 (156 output tokens)
+layer 0: window 285 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 280 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 281 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 282 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 287 (56 output tokens)
+layer 0: window 283 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 284 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 286 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 294 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 292 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 289 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 291 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 295 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 290 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 288 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 293 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 301 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 300 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 298 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 296 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 297 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 299 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 302 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 303 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 305 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 306 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 308 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 309 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 304 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 310 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 311 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 307 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 313 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 312 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 318 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 317 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 319 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 316 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 314 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 315 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 324 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 320 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 322 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 323 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 321 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 327 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 325 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 326 (119 output tokens)
+layer 0: window 334 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 335 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 332 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 330 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 331 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 329 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 328 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 333 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 338 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 337 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 341 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 340 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 336 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 343 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 342 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 339 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 347 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 351 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 344 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 346 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 350 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 349 (133 output tokens)
+layer 0: window 345 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 348 (210 output tokens)
+layer 0: window 356 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 358 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 359 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 352 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 353 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 354 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 357 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 355 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 363 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 360 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 361 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 362 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 367 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 366 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 365 (114 output tokens)
+layer 0: compacted window 364 (427 output tokens)
+layer 0: window 375 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 372 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 369 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 374 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 373 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 368 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 370 (141 output tokens)
+layer 0: compacted window 371 (153 output tokens)
+layer 0: window 379 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 377 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 381 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 376 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 382 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 380 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 383 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 378 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 386 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 391 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 389 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 390 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 384 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 388 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 385 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 387 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 398 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 394 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 399 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 395 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 392 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 397 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 396 (264 output tokens)
+layer 0: window 393 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 400 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 401 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 402 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 403 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 407 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 404 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 405 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 406 (52 output tokens)
+layer 0: window 410 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 409 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 414 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 411 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 413 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 408 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 415 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 412 (131 output tokens)
+layer 0: window 423 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 417 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 416 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 421 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 422 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 418 (135 output tokens)
+layer 0: compacted window 420 (162 output tokens)
+layer 0: compacted window 419 (415 output tokens)
+layer 0: window 428 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 427 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 426 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 424 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 425 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 431 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 429 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 430 (145 output tokens)
+layer 0: window 433 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 435 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 437 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 439 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 438 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 434 (111 output tokens)
+layer 0: window 432 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 436 (314 output tokens)
+layer 0: window 442 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 441 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 443 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 444 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 445 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 447 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 446 (65 output tokens)
+layer 0: window 440 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 453 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 451 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 455 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 448 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 449 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 452 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 450 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 454 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 460 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 459 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 462 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 458 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 456 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 457 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 461 (55 output tokens)
+layer 0: compacted window 463 (179 output tokens)
+layer 0: window 470 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 468 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 465 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 469 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 466 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 464 (94 output tokens)
+layer 0: window 471 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 467 (186 output tokens)
+layer 0: window 479 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 476 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 475 (19 output tokens)
+layer 0: window 472 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 477 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 474 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 473 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 478 (126 output tokens)
+layer 0: window 487 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 484 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 485 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 480 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 483 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 482 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 481 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 486 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 488 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 490 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 489 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 494 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 492 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 493 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 495 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 491 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 498 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 499 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 500 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 502 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 497 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 503 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 496 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 501 (90 output tokens)
+layer 0: window 504 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 510 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 505 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 506 (78 output tokens)
+layer 0: window 508 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 509 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 507 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 511 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 512 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 515 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 513 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 517 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 514 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 519 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 518 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 516 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 522 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 526 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 520 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 521 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 524 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 525 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 527 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 523 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 528 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 531 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 529 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 532 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 533 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 535 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 530 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 534 (149 output tokens)
+layer 0: window 537 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 536 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 541 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 539 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 540 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 542 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 538 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 543 (206 output tokens)
+layer 0: window 548 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 550 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 549 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 545 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 546 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 547 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 551 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 544 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 552 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 559 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 557 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 554 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 556 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 558 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 555 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 553 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 567 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 562 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 565 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 561 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 564 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 560 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 563 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 566 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 571 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 573 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 568 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 574 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 572 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 569 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 575 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 570 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 578 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 583 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 582 (52 output tokens)
+layer 0: window 579 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 580 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 576 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 581 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 577 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 584 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 585 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 590 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 591 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 588 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 587 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 586 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 589 (103 output tokens)
+layer 0: window 596 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 595 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 597 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 594 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 593 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 592 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 599 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 598 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 606 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 602 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 600 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 607 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 601 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 604 (134 output tokens)
+layer 0: compacted window 605 (119 output tokens)
+layer 0: window 603 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 612 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 615 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 614 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 609 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 610 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 613 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 608 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 611 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 616 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 618 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 619 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 617 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 620 (453 output tokens)
+layer 0: compacted window 622 (615 output tokens)
+layer 0: compacted window 623 (688 output tokens)
+layer 0: compacted window 621 (890 output tokens)
+layer 0: compacted window 628 (606 output tokens)
+layer 0: compacted window 629 (471 output tokens)
+layer 0: compacted window 626 (712 output tokens)
+layer 0: compacted window 630 (588 output tokens)
+layer 0: compacted window 631 (569 output tokens)
+layer 0: compacted window 627 (870 output tokens)
+layer 0: compacted window 625 (816 output tokens)
+layer 0: compacted window 624 (892 output tokens)
+layer 0: compacted window 636 (467 output tokens)
+layer 0: compacted window 637 (496 output tokens)
+layer 0: compacted window 632 (600 output tokens)
+layer 0: compacted window 638 (645 output tokens)
+layer 0: compacted window 639 (536 output tokens)
+layer 0: compacted window 634 (742 output tokens)
+layer 0: compacted window 633 (874 output tokens)
+layer 0: compacted window 635 (895 output tokens)
+layer 0: compacted window 647 (479 output tokens)
+layer 0: compacted window 642 (490 output tokens)
+layer 0: compacted window 644 (457 output tokens)
+layer 0: compacted window 645 (677 output tokens)
+layer 0: compacted window 640 (482 output tokens)
+layer 0: compacted window 643 (582 output tokens)
+layer 0: compacted window 646 (762 output tokens)
+layer 0: compacted window 641 (519 output tokens)
+layer 0: compacted window 653 (617 output tokens)
+layer 0: compacted window 652 (589 output tokens)
+layer 0: compacted window 648 (772 output tokens)
+layer 0: compacted window 650 (698 output tokens)
+layer 0: compacted window 654 (818 output tokens)
+layer 0: compacted window 655 (954 output tokens)
+layer 0: compacted window 651 (852 output tokens)
+layer 0: compacted window 649 (706 output tokens)
+layer 0: compacted window 658 (575 output tokens)
+layer 0: compacted window 657 (681 output tokens)
+layer 0: compacted window 656 (601 output tokens)
+layer 0: compacted window 659 (731 output tokens)
+layer 0: compacted window 661 (804 output tokens)
+layer 0: compacted window 662 (751 output tokens)
+layer 0: compacted window 660 (892 output tokens)
+layer 0: compacted window 663 (891 output tokens)
+layer 0: compacted window 664 (622 output tokens)
+layer 0: compacted window 671 (624 output tokens)
+layer 0: compacted window 665 (682 output tokens)
+layer 0: compacted window 666 (725 output tokens)
+layer 0: compacted window 669 (918 output tokens)
+layer 0: compacted window 668 (971 output tokens)
+layer 0: compacted window 667 (936 output tokens)
+layer 0: compacted window 670 (1201 output tokens)
+layer 0: compacted window 676 (270 output tokens)
+layer 0: compacted window 674 (643 output tokens)
+layer 0: compacted window 673 (625 output tokens)
+layer 0: compacted window 677 (668 output tokens)
+layer 0: compacted window 672 (649 output tokens)
+layer 0: compacted window 675 (928 output tokens)
+layer 0: compacted window 679 (989 output tokens)
+layer 0: compacted window 678 (959 output tokens)
+layer 0: compacted window 680 (659 output tokens)
+layer 0: compacted window 682 (710 output tokens)
+layer 0: compacted window 681 (754 output tokens)
+layer 0: compacted window 686 (628 output tokens)
+layer 0: compacted window 683 (772 output tokens)
+layer 0: compacted window 684 (893 output tokens)
+layer 0: compacted window 685 (832 output tokens)
+layer 0: compacted window 687 (690 output tokens)
+layer 0: compacted window 694 (781 output tokens)
+layer 0: compacted window 693 (776 output tokens)
+layer 0: compacted window 695 (648 output tokens)
+layer 0: compacted window 691 (707 output tokens)
+layer 0: compacted window 689 (687 output tokens)
+layer 0: compacted window 692 (769 output tokens)
+layer 0: compacted window 688 (967 output tokens)
+layer 0: compacted window 690 (923 output tokens)
+layer 0: compacted window 697 (285 output tokens)
+layer 0: compacted window 700 (301 output tokens)
+layer 0: compacted window 701 (569 output tokens)
+layer 0: compacted window 703 (676 output tokens)
+layer 0: compacted window 698 (636 output tokens)
+layer 0: compacted window 702 (542 output tokens)
+layer 0: compacted window 696 (538 output tokens)
+layer 0: compacted window 699 (627 output tokens)
+layer 0: compacted window 705 (505 output tokens)
+layer 0: compacted window 706 (546 output tokens)
+layer 0: compacted window 709 (501 output tokens)
+layer 0: compacted window 707 (694 output tokens)
+layer 0: compacted window 711 (635 output tokens)
+layer 0: compacted window 704 (773 output tokens)
+layer 0: compacted window 708 (845 output tokens)
+layer 0: compacted window 710 (721 output tokens)
+layer 0: compacted window 719 (389 output tokens)
+layer 0: compacted window 717 (570 output tokens)
+layer 0: compacted window 716 (574 output tokens)
+layer 0: compacted window 718 (531 output tokens)
+layer 0: compacted window 713 (760 output tokens)
+layer 0: compacted window 712 (799 output tokens)
+layer 0: compacted window 715 (776 output tokens)
+layer 0: compacted window 714 (839 output tokens)
+layer 0: compacted window 720 (494 output tokens)
+layer 0: compacted window 727 (568 output tokens)
+layer 0: compacted window 721 (723 output tokens)
+layer 0: compacted window 722 (1035 output tokens)
+layer 0: compacted window 726 (1073 output tokens)
+layer 0: compacted window 724 (1306 output tokens)
+layer 0: compacted window 725 (1395 output tokens)
+layer 0: compacted window 723 (1501 output tokens)
+layer 0: compacted window 728 (687 output tokens)
+layer 0: compacted window 733 (705 output tokens)
+layer 0: compacted window 735 (710 output tokens)
+layer 0: compacted window 731 (784 output tokens)
+layer 0: compacted window 734 (839 output tokens)
+layer 0: compacted window 729 (787 output tokens)
+layer 0: compacted window 732 (872 output tokens)
+layer 0: compacted window 730 (856 output tokens)
+layer 0: window 742 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 740 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 741 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 743 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 736 (158 output tokens)
+layer 0: compacted window 739 (146 output tokens)
+layer 0: compacted window 738 (395 output tokens)
+layer 0: compacted window 737 (394 output tokens)
+layer 0: window 746 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 748 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 747 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 749 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 745 (104 output tokens)
+layer 0: compacted window 744 (88 output tokens)
+layer 0: compacted window 750 (93 output tokens)
+layer 0: compacted window 751 (590 output tokens)
+layer 0: compacted window 758 (110 output tokens)
+layer 0: compacted window 753 (677 output tokens)
+layer 0: compacted window 757 (330 output tokens)
+layer 0: compacted window 756 (848 output tokens)
+layer 0: compacted window 752 (862 output tokens)
+layer 0: compacted window 759 (782 output tokens)
+layer 0: compacted window 754 (939 output tokens)
+layer 0: compacted window 755 (849 output tokens)
+layer 0: compacted window 763 (143 output tokens)
+layer 0: compacted window 766 (340 output tokens)
+layer 0: compacted window 764 (287 output tokens)
+layer 0: compacted window 765 (438 output tokens)
+layer 0: compacted window 767 (490 output tokens)
+layer 0: compacted window 762 (433 output tokens)
+layer 0: compacted window 761 (604 output tokens)
+layer 0: compacted window 760 (692 output tokens)
+layer 0: compacted window 768 (222 output tokens)
+layer 0: compacted window 772 (505 output tokens)
+layer 0: compacted window 773 (690 output tokens)
+layer 0: compacted window 771 (918 output tokens)
+layer 0: compacted window 774 (864 output tokens)
+layer 0: compacted window 770 (923 output tokens)
+layer 0: compacted window 769 (910 output tokens)
+layer 0: compacted window 775 (945 output tokens)
+layer 0: compacted window 783 (340 output tokens)
+layer 0: compacted window 777 (463 output tokens)
+layer 0: compacted window 782 (471 output tokens)
+layer 0: compacted window 780 (575 output tokens)
+layer 0: compacted window 776 (602 output tokens)
+layer 0: compacted window 779 (931 output tokens)
+layer 0: compacted window 781 (574 output tokens)
+layer 0: compacted window 778 (990 output tokens)
+layer 0: compacted window 786 (88 output tokens)
+layer 0: compacted window 784 (373 output tokens)
+layer 0: compacted window 790 (501 output tokens)
+layer 0: compacted window 785 (535 output tokens)
+layer 0: compacted window 791 (747 output tokens)
+layer 0: compacted window 789 (754 output tokens)
+layer 0: compacted window 787 (853 output tokens)
+layer 0: compacted window 788 (956 output tokens)
+layer 0: compacted window 798 (102 output tokens)
+layer 0: compacted window 793 (239 output tokens)
+layer 0: compacted window 792 (341 output tokens)
+layer 0: compacted window 799 (345 output tokens)
+layer 0: compacted window 796 (412 output tokens)
+layer 0: compacted window 797 (594 output tokens)
+layer 0: compacted window 794 (739 output tokens)
+layer 0: compacted window 795 (830 output tokens)
+layer 0: compacted window 801 (72 output tokens)
+layer 0: compacted window 804 (124 output tokens)
+layer 0: compacted window 807 (92 output tokens)
+layer 0: compacted window 806 (213 output tokens)
+layer 0: compacted window 800 (371 output tokens)
+layer 0: compacted window 803 (816 output tokens)
+layer 0: compacted window 802 (763 output tokens)
+layer 0: compacted window 805 (740 output tokens)
+layer 0: compacted window 814 (506 output tokens)
+layer 0: compacted window 815 (487 output tokens)
+layer 0: compacted window 813 (684 output tokens)
+layer 0: compacted window 810 (804 output tokens)
+layer 0: compacted window 811 (917 output tokens)
+layer 0: compacted window 812 (913 output tokens)
+layer 0: compacted window 808 (930 output tokens)
+layer 0: compacted window 809 (805 output tokens)
+layer 0: compacted window 823 (497 output tokens)
+layer 0: compacted window 816 (586 output tokens)
+layer 0: compacted window 817 (752 output tokens)
+layer 0: compacted window 818 (879 output tokens)
+layer 0: compacted window 819 (933 output tokens)
+layer 0: compacted window 821 (903 output tokens)
+layer 0: compacted window 820 (1019 output tokens)
+layer 0: compacted window 822 (965 output tokens)
+layer 0: compacted window 828 (577 output tokens)
+layer 0: compacted window 831 (645 output tokens)
+layer 0: compacted window 824 (634 output tokens)
+layer 0: compacted window 826 (792 output tokens)
+layer 0: compacted window 830 (808 output tokens)
+layer 0: compacted window 827 (944 output tokens)
+layer 0: compacted window 825 (1026 output tokens)
+layer 0: compacted window 829 (1055 output tokens)
+layer 0: compacted window 837 (523 output tokens)
+layer 0: compacted window 834 (586 output tokens)
+layer 0: compacted window 838 (728 output tokens)
+layer 0: compacted window 833 (863 output tokens)
+layer 0: compacted window 836 (827 output tokens)
+layer 0: compacted window 832 (613 output tokens)
+layer 0: compacted window 839 (740 output tokens)
+layer 0: compacted window 835 (888 output tokens)
+layer 0: compacted window 842 (504 output tokens)
+layer 0: compacted window 845 (600 output tokens)
+layer 0: compacted window 841 (643 output tokens)
+layer 0: compacted window 840 (767 output tokens)
+layer 0: compacted window 846 (666 output tokens)
+layer 0: compacted window 843 (991 output tokens)
+layer 0: compacted window 844 (901 output tokens)
+layer 0: compacted window 847 (962 output tokens)
+layer 0: compacted window 851 (79 output tokens)
+layer 0: compacted window 854 (109 output tokens)
+layer 0: compacted window 850 (217 output tokens)
+layer 0: compacted window 855 (614 output tokens)
+layer 0: compacted window 853 (249 output tokens)
+layer 0: compacted window 852 (840 output tokens)
+layer 0: compacted window 848 (1111 output tokens)
+layer 0: compacted window 849 (988 output tokens)
+layer 0: compacted window 860 (89 output tokens)
+layer 0: compacted window 861 (228 output tokens)
+layer 0: compacted window 857 (95 output tokens)
+layer 0: compacted window 858 (312 output tokens)
+layer 0: compacted window 859 (254 output tokens)
+layer 0: compacted window 863 (355 output tokens)
+layer 0: compacted window 856 (309 output tokens)
+layer 0: compacted window 862 (605 output tokens)
+layer 0: compacted window 866 (85 output tokens)
+layer 0: compacted window 864 (189 output tokens)
+layer 0: compacted window 868 (265 output tokens)
+layer 0: compacted window 870 (207 output tokens)
+layer 0: compacted window 869 (67 output tokens)
+layer 0: compacted window 871 (219 output tokens)
+layer 0: compacted window 865 (261 output tokens)
+layer 0: compacted window 867 (547 output tokens)
+layer 0: compacted window 875 (122 output tokens)
+layer 0: compacted window 876 (114 output tokens)
+layer 0: compacted window 873 (258 output tokens)
+layer 0: compacted window 874 (306 output tokens)
+layer 0: compacted window 878 (521 output tokens)
+layer 0: compacted window 879 (726 output tokens)
+layer 0: compacted window 872 (1091 output tokens)
+layer 0: compacted window 877 (998 output tokens)
+layer 0: compacted window 886 (210 output tokens)
+layer 0: compacted window 883 (259 output tokens)
+layer 0: compacted window 882 (161 output tokens)
+layer 0: compacted window 885 (278 output tokens)
+layer 0: compacted window 880 (427 output tokens)
+layer 0: compacted window 887 (477 output tokens)
+layer 0: compacted window 884 (438 output tokens)
+layer 0: compacted window 881 (141 output tokens)
+layer 0: window 889 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 895 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 893 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 894 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 891 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 890 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 888 (268 output tokens)
+layer 0: compacted window 892 (679 output tokens)
+layer 0: window 899 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 903 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 896 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 901 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 900 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 898 (308 output tokens)
+layer 0: compacted window 897 (561 output tokens)
+layer 0: compacted window 902 (479 output tokens)
+layer 0: window 906 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 904 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 905 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 909 (412 output tokens)
+layer 0: compacted window 911 (473 output tokens)
+layer 0: compacted window 907 (542 output tokens)
+layer 0: compacted window 910 (589 output tokens)
+layer 0: compacted window 908 (833 output tokens)
+layer 0: compacted window 912 (89 output tokens)
+layer 0: compacted window 918 (408 output tokens)
+layer 0: compacted window 917 (450 output tokens)
+layer 0: compacted window 913 (693 output tokens)
+layer 0: compacted window 914 (867 output tokens)
+layer 0: compacted window 919 (874 output tokens)
+layer 0: compacted window 915 (1125 output tokens)
+layer 0: compacted window 916 (1038 output tokens)
+layer 0: compacted window 923 (111 output tokens)
+layer 0: compacted window 920 (202 output tokens)
+layer 0: compacted window 922 (348 output tokens)
+layer 0: compacted window 921 (660 output tokens)
+layer 0: compacted window 926 (582 output tokens)
+layer 0: compacted window 924 (598 output tokens)
+layer 0: compacted window 927 (794 output tokens)
+layer 0: compacted window 925 (847 output tokens)
+layer 0: window 934 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 935 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 933 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 931 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 932 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 930 (112 output tokens)
+layer 0: compacted window 928 (228 output tokens)
+layer 0: compacted window 929 (961 output tokens)
+layer 0: window 941 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 940 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 939 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 936 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 937 (141 output tokens)
+layer 0: compacted window 942 (102 output tokens)
+layer 0: compacted window 938 (133 output tokens)
+layer 0: compacted window 943 (599 output tokens)
+layer 0: window 948 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 950 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 951 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 947 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 949 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 946 (142 output tokens)
+layer 0: compacted window 944 (591 output tokens)
+layer 0: compacted window 945 (871 output tokens)
+layer 0: window 952 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 957 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: window 955 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 958 (55 output tokens)
+layer 0: compacted window 954 (95 output tokens)
+layer 0: window 956 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 953 (127 output tokens)
+layer 0: compacted window 959 (555 output tokens)
+layer 0: compacted window 960 (475 output tokens)
+layer 0: compacted window 965 (703 output tokens)
+layer 0: compacted window 964 (881 output tokens)
+layer 0: compacted window 962 (864 output tokens)
+layer 0: compacted window 961 (835 output tokens)
+layer 0: compacted window 967 (871 output tokens)
+layer 0: compacted window 963 (969 output tokens)
+layer 0: compacted window 966 (721 output tokens)
+layer 0: compacted window 975 (384 output tokens)
+layer 0: compacted window 973 (667 output tokens)
+layer 0: compacted window 971 (645 output tokens)
+layer 0: compacted window 970 (731 output tokens)
+layer 0: compacted window 974 (798 output tokens)
+layer 0: compacted window 972 (716 output tokens)
+layer 0: compacted window 968 (848 output tokens)
+layer 0: compacted window 969 (1639 output tokens)
+layer 0: compacted window 978 (628 output tokens)
+layer 0: compacted window 980 (728 output tokens)
+layer 0: compacted window 981 (688 output tokens)
+layer 0: compacted window 976 (801 output tokens)
+layer 0: compacted window 977 (934 output tokens)
+layer 0: compacted window 983 (835 output tokens)
+layer 0: compacted window 979 (1050 output tokens)
+layer 0: compacted window 982 (980 output tokens)
+layer 0: compacted window 984 (472 output tokens)
+layer 0: compacted window 986 (842 output tokens)
+layer 0: compacted window 987 (925 output tokens)
+layer 0: compacted window 985 (943 output tokens)
+layer 0: compacted window 988 (1202 output tokens)
+layer 0: compacted window 989 (1102 output tokens)
+layer 0: compacted window 991 (877 output tokens)
+layer 0: compacted window 990 (1588 output tokens)
+layer 0: compacted window 998 (507 output tokens)
+layer 0: compacted window 992 (627 output tokens)
+layer 0: compacted window 993 (632 output tokens)
+layer 0: compacted window 999 (827 output tokens)
+layer 0: compacted window 996 (824 output tokens)
+layer 0: compacted window 995 (1089 output tokens)
+layer 0: compacted window 994 (1474 output tokens)
+layer 0: compacted window 997 (4132 output tokens)
+layer 0: compacted window 1007 (585 output tokens)
+layer 0: compacted window 1002 (819 output tokens)
+layer 0: compacted window 1003 (689 output tokens)
+layer 0: compacted window 1004 (1077 output tokens)
+layer 0: compacted window 1000 (1217 output tokens)
+layer 0: compacted window 1005 (1067 output tokens)
+layer 0: compacted window 1001 (1517 output tokens)
+layer 0: compacted window 1006 (1257 output tokens)
+layer 0: compacted window 1009 (120 output tokens)
+layer 0: compacted window 1010 (711 output tokens)
+layer 0: compacted window 1015 (873 output tokens)
+layer 0: compacted window 1011 (924 output tokens)
+layer 0: compacted window 1013 (991 output tokens)
+layer 0: compacted window 1012 (1208 output tokens)
+layer 0: compacted window 1014 (923 output tokens)
+layer 0: compacted window 1008 (1327 output tokens)
+layer 0: compacted window 1019 (143 output tokens)
+layer 0: compacted window 1018 (378 output tokens)
+layer 0: compacted window 1017 (575 output tokens)
+layer 0: compacted window 1016 (678 output tokens)
+layer 0: compacted window 1023 (939 output tokens)
+layer 0: compacted window 1022 (864 output tokens)
+layer 0: compacted window 1021 (1042 output tokens)
+layer 0: compacted window 1020 (1012 output tokens)
+layer 0: compacted window 1026 (346 output tokens)
+layer 0: compacted window 1027 (658 output tokens)
+layer 0: compacted window 1031 (654 output tokens)
+layer 0: compacted window 1030 (529 output tokens)
+layer 0: compacted window 1029 (1153 output tokens)
+layer 0: compacted window 1028 (1162 output tokens)
+layer 0: compacted window 1025 (1360 output tokens)
+layer 0: compacted window 1024 (1571 output tokens)
+layer 0: compacted window 1039 (379 output tokens)
+layer 0: compacted window 1036 (471 output tokens)
+layer 0: compacted window 1035 (772 output tokens)
+layer 0: compacted window 1037 (972 output tokens)
+layer 0: compacted window 1034 (970 output tokens)
+layer 0: compacted window 1032 (1240 output tokens)
+layer 0: compacted window 1033 (1077 output tokens)
+layer 0: compacted window 1038 (1103 output tokens)
+layer 0: compacted window 1041 (101 output tokens)
+layer 0: compacted window 1042 (294 output tokens)
+layer 0: compacted window 1040 (453 output tokens)
+layer 0: compacted window 1046 (641 output tokens)
+layer 0: compacted window 1047 (705 output tokens)
+layer 0: compacted window 1045 (894 output tokens)
+layer 0: compacted window 1043 (1040 output tokens)
+layer 0: compacted window 1044 (905 output tokens)
+layer 0: compacted window 1050 (474 output tokens)
+layer 0: compacted window 1052 (591 output tokens)
+layer 0: compacted window 1055 (701 output tokens)
+layer 0: compacted window 1048 (809 output tokens)
+layer 0: compacted window 1049 (716 output tokens)
+layer 0: compacted window 1054 (820 output tokens)
+layer 0: compacted window 1053 (956 output tokens)
+layer 0: compacted window 1051 (1253 output tokens)
+layer 0: window 1058 NOT compacted (stop_reason=refusal) — placeholder written
+layer 0: compacted window 1057 (300 output tokens)
+layer 0: compacted window 1059 (233 output tokens)
+layer 0: compacted window 1056 (601 output tokens)
+layer 0: compacted window 1060 (1095 output tokens)
+layer 0: compacted window 1062 (1283 output tokens)
+layer 0: compacted window 1063 (1369 output tokens)
+layer 0: compacted window 1061 (1445 output tokens)
+layer 0: compacted window 1068 (609 output tokens)
+layer 0: compacted window 1069 (650 output tokens)
+layer 0: compacted window 1070 (653 output tokens)
+layer 0: compacted window 1071 (945 output tokens)
+layer 0: compacted window 1065 (990 output tokens)
+layer 0: compacted window 1064 (1112 output tokens)
+layer 0: compacted window 1067 (1028 output tokens)
+layer 0: compacted window 1066 (1271 output tokens)
+layer 0: compacted window 1079 (182 output tokens)
+layer 0: compacted window 1073 (406 output tokens)
+layer 0: compacted window 1078 (704 output tokens)
+layer 0: compacted window 1076 (814 output tokens)
+layer 0: compacted window 1077 (874 output tokens)
+layer 0: compacted window 1072 (926 output tokens)
+layer 0: compacted window 1075 (1224 output tokens)
+layer 0: compacted window 1074 (1218 output tokens)
+layer 0: compacted window 1084 (112 output tokens)
+layer 0: compacted window 1082 (721 output tokens)
+layer 0: compacted window 1083 (781 output tokens)
+layer 0: compacted window 1080 (740 output tokens)
+layer 0: compacted window 1081 (821 output tokens)
+layer 0: compacted window 1087 (982 output tokens)
+layer 0: compacted window 1086 (1066 output tokens)
+layer 0: compacted window 1085 (2809 output tokens)
+layer 0: compacted window 1095 (495 output tokens)
+layer 0: compacted window 1094 (780 output tokens)
+layer 0: compacted window 1093 (860 output tokens)
+layer 0: compacted window 1090 (752 output tokens)
+layer 0: compacted window 1088 (905 output tokens)
+layer 0: compacted window 1091 (854 output tokens)
+layer 0: compacted window 1089 (1115 output tokens)
+layer 0: compacted window 1092 (1030 output tokens)
+layer 0: compacted window 1098 (580 output tokens)
+layer 0: compacted window 1101 (714 output tokens)
+layer 0: compacted window 1097 (527 output tokens)
+layer 0: compacted window 1099 (735 output tokens)
+layer 0: compacted window 1096 (685 output tokens)
+layer 0: compacted window 1102 (768 output tokens)
+layer 0: compacted window 1103 (965 output tokens)
+layer 0: compacted window 1100 (905 output tokens)
+layer 0: compacted window 1105 (137 output tokens)
+layer 0: compacted window 1108 (167 output tokens)
+layer 0: compacted window 1110 (476 output tokens)
+layer 0: compacted window 1111 (714 output tokens)
+layer 0: compacted window 1106 (926 output tokens)
+layer 0: compacted window 1109 (887 output tokens)
+layer 0: compacted window 1107 (895 output tokens)
+layer 0: compacted window 1104 (980 output tokens)
+layer 0: compacted window 1112 (363 output tokens)
+layer 0: compacted window 1113 (402 output tokens)
+layer 0: compacted window 1115 (542 output tokens)
+layer 0: compacted window 1117 (572 output tokens)
+layer 0: compacted window 1114 (603 output tokens)
+layer 0: compacted window 1119 (671 output tokens)
+layer 0: compacted window 1116 (739 output tokens)
+layer 0: compacted window 1118 (775 output tokens)
+layer 0: compacted window 1126 (119 output tokens)
+layer 0: compacted window 1124 (374 output tokens)
+layer 0: compacted window 1121 (555 output tokens)
+layer 0: compacted window 1120 (664 output tokens)
+layer 0: compacted window 1122 (681 output tokens)
+layer 0: compacted window 1123 (791 output tokens)
+layer 0: compacted window 1125 (1010 output tokens)
+layer 0: compacted window 1127 (926 output tokens)
+layer 0: compacted window 1128 (67 output tokens)
+layer 0: compacted window 1135 (641 output tokens)
+layer 0: compacted window 1130 (644 output tokens)
+layer 0: compacted window 1129 (831 output tokens)
+layer 0: compacted window 1134 (783 output tokens)
+layer 0: compacted window 1133 (844 output tokens)
+layer 0: compacted window 1132 (1426 output tokens)
+layer 0: compacted window 1131 (1526 output tokens)
+layer 0: compacted window 1139 (162 output tokens)
+layer 0: compacted window 1142 (489 output tokens)
+layer 0: compacted window 1143 (390 output tokens)
+layer 0: compacted window 1136 (547 output tokens)
+layer 0: compacted window 1140 (605 output tokens)
+layer 0: compacted window 1138 (833 output tokens)
+layer 0: compacted window 1141 (858 output tokens)
+layer 0: compacted window 1137 (1164 output tokens)
+layer 0: compacted window 1146 (149 output tokens)
+layer 0: compacted window 1147 (477 output tokens)
+layer 0: compacted window 1148 (785 output tokens)
+layer 0: compacted window 1144 (764 output tokens)
+layer 0: compacted window 1145 (718 output tokens)
+layer 0: compacted window 1150 (1073 output tokens)
+layer 0: compacted window 1149 (987 output tokens)
+layer 0: compacted window 1151 (1044 output tokens)
+layer 0: compacted window 1158 (125 output tokens)
+layer 0: compacted window 1156 (300 output tokens)
+layer 0: compacted window 1159 (767 output tokens)
+layer 0: compacted window 1157 (809 output tokens)
+layer 0: compacted window 1155 (1119 output tokens)
+layer 0: compacted window 1152 (853 output tokens)
+layer 0: compacted window 1154 (1596 output tokens)
+layer 0: compacted window 1153 (1784 output tokens)
+layer 0: compacted window 1161 (130 output tokens)
+layer 0: compacted window 1162 (280 output tokens)
+layer 0: compacted window 1167 (597 output tokens)
+layer 0: compacted window 1163 (567 output tokens)
+layer 0: compacted window 1166 (615 output tokens)
+layer 0: compacted window 1165 (588 output tokens)
+layer 0: compacted window 1164 (479 output tokens)
+layer 0: compacted window 1160 (785 output tokens)
+layer 0: compacted window 1169 (249 output tokens)
+layer 0: compacted window 1172 (713 output tokens)
+layer 0: compacted window 1171 (717 output tokens)
+layer 0: compacted window 1170 (853 output tokens)
+layer 0: compacted window 1168 (991 output tokens)
+layer 0: compacted window 1174 (1043 output tokens)
+layer 0: compacted window 1175 (869 output tokens)
+layer 0: compacted window 1173 (839 output tokens)
+layer 0: compacted window 1181 (101 output tokens)
+layer 0: compacted window 1180 (483 output tokens)
+layer 0: compacted window 1178 (623 output tokens)
+layer 0: compacted window 1179 (896 output tokens)
+layer 0: compacted window 1177 (997 output tokens)
+layer 0: compacted window 1182 (1036 output tokens)
+layer 0: compacted window 1176 (922 output tokens)
+layer 0: compacted window 1183 (1140 output tokens)
+layer 0: compacted window 1186 (136 output tokens)
+layer 0: compacted window 1187 (262 output tokens)
+layer 0: compacted window 1184 (286 output tokens)
+layer 0: compacted window 1189 (507 output tokens)
+layer 0: compacted window 1191 (799 output tokens)
+layer 0: compacted window 1188 (846 output tokens)
+layer 0: compacted window 1185 (912 output tokens)
+layer 0: compacted window 1190 (1007 output tokens)
+layer 0: compacted window 1199 (29 output tokens)
+layer 0: compacted window 1197 (179 output tokens)
+layer 0: compacted window 1196 (149 output tokens)
+layer 0: compacted window 1194 (337 output tokens)
+layer 0: compacted window 1192 (497 output tokens)
+layer 0: compacted window 1193 (725 output tokens)
+layer 0: compacted window 1195 (866 output tokens)
+layer 0: compacted window 1198 (1271 output tokens)
+layer 0: compacted window 1200 (273 output tokens)
+layer 0: compacted window 1204 (357 output tokens)
+layer 0: compacted window 1202 (469 output tokens)
+layer 0: compacted window 1205 (550 output tokens)
+layer 0: compacted window 1207 (656 output tokens)
+layer 0: compacted window 1206 (724 output tokens)
+layer 0: compacted window 1201 (850 output tokens)
+layer 0: compacted window 1203 (873 output tokens)
+layer 0: compacted window 1213 (204 output tokens)
+layer 0: compacted window 1210 (238 output tokens)
+layer 0: compacted window 1214 (401 output tokens)
+layer 0: compacted window 1209 (399 output tokens)
+layer 0: compacted window 1212 (572 output tokens)
+layer 0: compacted window 1215 (824 output tokens)
+layer 0: compacted window 1208 (726 output tokens)
+layer 0: compacted window 1211 (783 output tokens)
+layer 0: compacted window 1220 (224 output tokens)
+layer 0: compacted window 1221 (310 output tokens)
+layer 0: compacted window 1216 (422 output tokens)
+layer 0: compacted window 1223 (504 output tokens)
+layer 0: compacted window 1222 (572 output tokens)
+layer 0: compacted window 1217 (819 output tokens)
+layer 0: compacted window 1218 (894 output tokens)
+layer 0: compacted window 1219 (1085 output tokens)
+layer 0: compacted window 1228 (194 output tokens)
+layer 0: compacted window 1224 (154 output tokens)
+layer 0: compacted window 1225 (105 output tokens)
+layer 0: compacted window 1226 (300 output tokens)
+layer 0: compacted window 1227 (354 output tokens)
+layer 0: compacted window 1230 (450 output tokens)
+layer 0: compacted window 1231 (309 output tokens)
+layer 0: compacted window 1229 (629 output tokens)
+layer 0: compacted window 1232 (136 output tokens)
+layer 0: compacted window 1237 (231 output tokens)
+layer 0: compacted window 1236 (222 output tokens)
+layer 0: compacted window 1239 (636 output tokens)
+layer 0: compacted window 1235 (719 output tokens)
+layer 0: compacted window 1234 (868 output tokens)
+layer 0: compacted window 1238 (962 output tokens)
+layer 0: compacted window 1233 (910 output tokens)
+layer 0: compacted window 1242 (160 output tokens)
+layer 0: compacted window 1245 (166 output tokens)
+layer 0: compacted window 1244 (150 output tokens)
+layer 0: compacted window 1241 (155 output tokens)
+layer 0: compacted window 1243 (227 output tokens)
+layer 0: compacted window 1240 (298 output tokens)
