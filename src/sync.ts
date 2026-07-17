@@ -2,7 +2,9 @@
 // INBOX and the Sent mailbox (received this month or last month by default)
 // and writes one markdown file per email into the account's sync path.
 // Idempotent: emails already on disk (matched by message-id in the files'
-// frontmatter) are skipped without re-downloading their bodies. Mirrors
+// frontmatter) are skipped without re-downloading their bodies — unless
+// --force-rewrite, which re-downloads them and overwrites the files in place
+// (e.g. to pick up frontmatter added by a newer version of renderEmail). Mirrors
 // deletions too: a file whose email has vanished from the server (and whose
 // date is safely inside the sync window) is deleted after a clean sync.
 
@@ -118,7 +120,13 @@ function writeFileAtomic(path: string, content: string): void {
   renameSync(tmp, path);
 }
 
-function chooseTargetPath(dir: string, parsed: ParsedMail, fetchDate: Date): { path: string; alreadySynced: boolean } {
+function chooseTargetPath(
+  dir: string,
+  parsed: ParsedMail,
+  fetchDate: Date,
+  existing: Map<string, ExistingFile>,
+  forceRewrite: boolean,
+): { path: string; alreadySynced: boolean } {
   const date = parsed.date ?? fetchDate;
   const subject = parsed.subject ?? '';
   const messageId = (parsed.messageId ?? '').trim();
@@ -129,7 +137,14 @@ function chooseTargetPath(dir: string, parsed: ParsedMail, fetchDate: Date): { p
     const from = parsed.from?.text ?? '';
     const name = buildFilename(date, subject, fallbackHash(from, date.toISOString(), subject));
     const path = join(dir, name);
-    return { path, alreadySynced: existsSync(path) };
+    return { path, alreadySynced: !forceRewrite && existsSync(path) };
+  }
+
+  // Force-rewrite overwrites the file this email already lives in, keeping
+  // its name stable rather than minting a duplicate under a fresh suffix.
+  if (forceRewrite) {
+    const prior = existing.get(messageId);
+    if (prior) return { path: join(dir, prior.name), alreadySynced: false };
   }
 
   // Message-id dedupe already ran (phase A), so an existing file here is a
@@ -162,6 +177,8 @@ async function syncMailbox(
   dir: string,
   seen: Set<string>,
   serverIds: Set<string>,
+  existing: Map<string, ExistingFile>,
+  forceRewrite: boolean,
   counts: SyncCounts,
 ): Promise<void> {
   const lock = await client.getMailboxLock(mailbox);
@@ -199,7 +216,7 @@ async function syncMailbox(
         const msg = await client.fetchOne(uid, { source: true }, { uid: true });
         if (!msg || !msg.source) throw new Error('server returned no message source');
         const parsed = await simpleParser(msg.source);
-        const { path, alreadySynced } = chooseTargetPath(dir, parsed, new Date());
+        const { path, alreadySynced } = chooseTargetPath(dir, parsed, new Date(), existing, forceRewrite);
         if (alreadySynced) {
           counts.skipped++;
           continue;
@@ -219,15 +236,16 @@ async function syncMailbox(
   }
 }
 
-async function syncAccount(account: ImapAccount, since: Date): Promise<SyncCounts> {
+async function syncAccount(account: ImapAccount, since: Date, forceRewrite: boolean): Promise<SyncCounts> {
   const counts: SyncCounts = { written: 0, skipped: 0, deleted: 0, errors: 0 };
   const dir = account.syncPath;
   mkdirSync(dir, { recursive: true });
   const existing = collectExistingFiles(dir);
   // Shared across mailboxes, so a message that lives in both INBOX and Sent
   // (e.g. mail to yourself) is written once. INBOX is synced first, so the
-  // received copy wins.
-  const seen = new Set(existing.keys());
+  // received copy wins. Force-rewrite starts empty so files on disk don't
+  // suppress re-downloading, but still dedupes across mailboxes within the run.
+  const seen = forceRewrite ? new Set<string>() : new Set(existing.keys());
   // Every message-id observed on the server this run, whether or not it was
   // already synced — the ground truth pruning compares against.
   const serverIds = new Set<string>();
@@ -240,7 +258,7 @@ async function syncAccount(account: ImapAccount, since: Date): Promise<SyncCount
     if (sent) mailboxes.push(sent);
     else console.error(`${account.label}: no Sent mailbox found — syncing INBOX only`);
     for (const mailbox of mailboxes) {
-      await syncMailbox(client, mailbox, since, dir, seen, serverIds, counts);
+      await syncMailbox(client, mailbox, since, dir, seen, serverIds, existing, forceRewrite, counts);
     }
     // Runs only after every mailbox listed its messages without throwing —
     // an aborted sync leaves serverIds incomplete and must not delete anything
@@ -254,19 +272,19 @@ async function syncAccount(account: ImapAccount, since: Date): Promise<SyncCount
 
 // Syncs every account, isolating failures: one broken account logs loudly and
 // the rest still run. Returns true only when everything was fully clean.
-export async function runSync(config: Config, since: Date = computeSinceDate()): Promise<boolean> {
+export async function runSync(config: Config, since: Date = computeSinceDate(), forceRewrite = false): Promise<boolean> {
   if (config.accounts.length === 0) {
     console.error('No accounts configured. Run `npm run auth` to add one.');
     return false;
   }
 
-  console.log(dim(`Syncing INBOX + Sent mail since ${since.toDateString()}`));
+  console.log(dim(`Syncing INBOX + Sent mail since ${since.toDateString()}${forceRewrite ? ' (force-rewrite: overwriting already-synced files)' : ''}`));
 
   let allOk = true;
   const totals: SyncCounts = { written: 0, skipped: 0, deleted: 0, errors: 0 };
   for (const account of config.accounts) {
     try {
-      const counts = await syncAccount(account, since);
+      const counts = await syncAccount(account, since, forceRewrite);
       totals.written += counts.written;
       totals.skipped += counts.skipped;
       totals.deleted += counts.deleted;

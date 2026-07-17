@@ -1,6 +1,6 @@
-// `npm run archive <md dir>` — for every email markdown file in the given
-// directory, finds the email on the server (by the message-id in the file's
-// frontmatter, searched in the mailbox it was synced from), moves it to the
+// `npm run archive <md dir>` — for every INBOX email markdown file in the
+// given directory, finds the email on the server (by the message-id in the
+// file's frontmatter, searched in the mailbox it was synced from), moves it to the
 // account's Archive mailbox, and deletes the file. The file is only deleted
 // after the server confirms the move — a failed or not-found archive keeps
 // the file so nothing is lost silently.
@@ -32,7 +32,9 @@ interface ArchiveCounts {
 
 // Files without a message-id (fallback-hash filenames) or without a mailbox
 // can't be located on any server, so they are reported and left alone rather
-// than guessed at.
+// than guessed at. Only INBOX mail is archivable: archiving anything else
+// (e.g. Sent) just strips its label server-side for no benefit, so non-INBOX
+// files are rejected.
 function collectTargets(dir: string, counts: ArchiveCounts): ArchiveTarget[] {
   const targets: ArchiveTarget[] = [];
   for (const name of readdirSync(dir).sort()) {
@@ -44,6 +46,11 @@ function collectTargets(dir: string, counts: ArchiveCounts): ArchiveTarget[] {
     if (!messageId || !mailbox) {
       counts.skipped++;
       console.error(dim(`skipping ${name}: no message-id/mailbox in frontmatter`));
+      continue;
+    }
+    if (mailbox !== 'INBOX') {
+      counts.skipped++;
+      console.error(red(`skipping ${name}: mailbox is "${mailbox}" — only INBOX mail can be archived`));
       continue;
     }
     targets.push({ path, name, messageId, mailbox, archived: false });

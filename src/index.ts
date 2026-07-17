@@ -2,12 +2,13 @@
 //
 //   npm start                          sync since the 1st of last month
 //   npm start -- --since 2026-01-01    sync since a specific date
+//   npm start -- --force-rewrite       re-download and overwrite already-synced files
 
 import { red } from './ansi.js';
 import { loadConfig } from './config.js';
 import { runSync } from './sync.js';
 
-const USAGE = 'Usage: npm start [-- --since YYYY-MM-DD]';
+const USAGE = 'Usage: npm start [-- --since YYYY-MM-DD] [--force-rewrite]';
 
 // Strict YYYY-MM-DD, validated by round-trip so e.g. 2026-02-31 is rejected
 // rather than silently rolling over into March.
@@ -24,8 +25,9 @@ function parseSinceValue(value: string): Date {
   return date;
 }
 
-function parseArgs(argv: string[]): { since: Date | undefined } {
+function parseArgs(argv: string[]): { since: Date | undefined; forceRewrite: boolean } {
   let since: Date | undefined;
+  let forceRewrite = false;
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === '--since') {
@@ -34,17 +36,19 @@ function parseArgs(argv: string[]): { since: Date | undefined } {
       since = parseSinceValue(value);
     } else if (arg.startsWith('--since=')) {
       since = parseSinceValue(arg.slice('--since='.length));
+    } else if (arg === '--force-rewrite') {
+      forceRewrite = true;
     } else {
       throw new Error(`Unknown argument "${arg}"\n${USAGE}`);
     }
   }
-  return { since };
+  return { since, forceRewrite };
 }
 
 async function main(): Promise<void> {
-  const { since } = parseArgs(process.argv.slice(2));
+  const { since, forceRewrite } = parseArgs(process.argv.slice(2));
   const config = loadConfig();
-  const ok = await runSync(config, since);
+  const ok = await runSync(config, since, forceRewrite);
   process.exitCode = ok ? 0 : 1;
 }
 
