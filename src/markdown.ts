@@ -1,8 +1,9 @@
-// Pure email → markdown rendering: frontmatter, filenames, and the scanner
-// that reads message-ids back out of existing files. Writer and scanner live
-// together so the frontmatter format has exactly one owner.
+// Email → markdown rendering: frontmatter, filenames, and the scanner that
+// reads frontmatter values back out of existing files. Writer and scanner
+// live together so the frontmatter format has exactly one owner.
 
 import { createHash } from 'crypto';
+import { closeSync, openSync, readSync } from 'fs';
 import type { AddressObject, ParsedMail } from 'mailparser';
 import TurndownService from 'turndown';
 
@@ -88,20 +89,49 @@ export function renderEmail(parsed: ParsedMail, fallbackDate: Date, mailbox: str
   return out;
 }
 
-// Reads the message-id back out of a previously written file. Scans only the
-// frontmatter block — an email body is arbitrary text and could contain a
+// Reads a frontmatter value back out of a previously written file. Scans only
+// the frontmatter block — an email body is arbitrary text and could contain a
 // line that looks like frontmatter, so matching past the closing --- would
-// let a hostile email poison the dedupe set.
-export function extractMessageId(fileHead: string): string | null {
+// let a hostile email poison the dedupe set. `key` must be a literal key we
+// wrote ourselves (it is interpolated into a regex unescaped).
+export function extractFrontmatterValue(fileHead: string, key: string): string | null {
   if (!fileHead.startsWith('---\n')) return null;
   const end = fileHead.indexOf('\n---', 4);
   const frontmatter = end === -1 ? fileHead : fileHead.slice(0, end);
-  const match = frontmatter.match(/^message-id: (".*")$/m);
+  const match = frontmatter.match(new RegExp(`^${key}: (".*")$`, 'm'));
   if (!match) return null;
   try {
-    const id = JSON.parse(match[1]) as string;
-    return id === '' ? null : id;
+    const value = JSON.parse(match[1]) as string;
+    return value === '' ? null : value;
   } catch {
     return null;
+  }
+}
+
+export function extractMessageId(fileHead: string): string | null {
+  return extractFrontmatterValue(fileHead, 'message-id');
+}
+
+// How much of each file to read when scanning for frontmatter values.
+// Frontmatter is a handful of single-line quoted scalars, but from/to lists
+// with many recipients can get long — 8 KB leaves a wide margin.
+const FRONTMATTER_SCAN_BYTES = 8192;
+
+// Reads just the head of a previously written file, enough to cover its
+// frontmatter. Returns null when the file can't be opened (e.g. it vanished
+// between readdir and open).
+export function readFrontmatterHead(path: string): string | null {
+  let fd: number;
+  try {
+    fd = openSync(path, 'r');
+  } catch {
+    return null;
+  }
+  try {
+    const buffer = Buffer.alloc(FRONTMATTER_SCAN_BYTES);
+    const bytes = readSync(fd, buffer, 0, FRONTMATTER_SCAN_BYTES, 0);
+    return buffer.toString('utf8', 0, bytes);
+  } finally {
+    closeSync(fd);
   }
 }

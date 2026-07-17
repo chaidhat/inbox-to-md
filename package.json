@@ -9,6 +9,7 @@
     "auth": "tsx src/auth.ts",
     "dev": "tsx src/index.ts",
     "start": "tsx src/index.ts",
+    "archive": "tsx src/archive.ts",
     "compact": "tsx src/compact.ts"
   },
   "license": "MIT",

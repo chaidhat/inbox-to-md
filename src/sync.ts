@@ -2,27 +2,40 @@
 // INBOX and the Sent mailbox (received this month or last month by default)
 // and writes one markdown file per email into the account's sync path.
 // Idempotent: emails already on disk (matched by message-id in the files'
-// frontmatter) are skipped without re-downloading their bodies.
+// frontmatter) are skipped without re-downloading their bodies. Mirrors
+// deletions too: a file whose email has vanished from the server (and whose
+// date is safely inside the sync window) is deleted after a clean sync.
 
-import { closeSync, existsSync, mkdirSync, openSync, readSync, readdirSync, renameSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import type { ImapFlow } from 'imapflow';
 import { simpleParser, type ParsedMail } from 'mailparser';
 import { bold, dim, green, red } from './ansi.js';
 import type { Config, ImapAccount } from './config.js';
 import { closeImapClient, createImapClient, describeImapError } from './imap.js';
-import { buildFilename, extractMessageId, fallbackHash, renderEmail } from './markdown.js';
-
-// How much of each existing file to scan for its frontmatter message-id.
-// Frontmatter is a handful of single-line quoted scalars, but from/to lists
-// with many recipients can get long — 8 KB leaves a wide margin.
-const FRONTMATTER_SCAN_BYTES = 8192;
+import { buildFilename, extractFrontmatterValue, extractMessageId, fallbackHash, readFrontmatterHead, renderEmail } from './markdown.js';
 
 interface SyncCounts {
   written: number;
   skipped: number;
+  deleted: number;
   errors: number;
 }
+
+// What we know about a previously synced file, read from its frontmatter.
+// Used both for dedupe (the map keys) and for pruning files whose email has
+// since disappeared from the server.
+interface ExistingFile {
+  name: string;
+  date: Date | null;
+  mailbox: string | null;
+}
+
+// SEARCH SINCE works on the server's internal date at day granularity in the
+// server's timezone, while our frontmatter stores the email's header date —
+// the two can disagree around the boundary. Only prune files comfortably
+// inside the window so a boundary mismatch can't delete a still-live email.
+const PRUNE_BOUNDARY_MARGIN_MS = 24 * 60 * 60 * 1000;
 
 // In-place progress line, TTY only: piped output stays clean (matching the
 // ansi.ts helpers, which also degrade to plain text off-TTY). Overwrites
@@ -51,26 +64,48 @@ export function computeSinceDate(now: Date = new Date()): Date {
 // The files on disk are the only dedupe state — no sidecar index, which would
 // drift the moment the user deletes or moves a file and then silently skip
 // re-syncing it.
-export function collectExistingMessageIds(dir: string): Set<string> {
-  const seen = new Set<string>();
-  const buffer = Buffer.alloc(FRONTMATTER_SCAN_BYTES);
+export function collectExistingFiles(dir: string): Map<string, ExistingFile> {
+  const existing = new Map<string, ExistingFile>();
   for (const name of readdirSync(dir)) {
     if (!name.endsWith('.md')) continue;
-    let fd: number;
-    try {
-      fd = openSync(join(dir, name), 'r');
-    } catch {
-      continue; // vanished between readdir and open; nothing to dedupe against
-    }
-    try {
-      const bytes = readSync(fd, buffer, 0, FRONTMATTER_SCAN_BYTES, 0);
-      const id = extractMessageId(buffer.toString('utf8', 0, bytes));
-      if (id) seen.add(id);
-    } finally {
-      closeSync(fd);
-    }
+    const head = readFrontmatterHead(join(dir, name));
+    if (head === null) continue; // vanished between readdir and open; nothing to dedupe against
+    const id = extractMessageId(head);
+    if (!id) continue;
+    const dateRaw = extractFrontmatterValue(head, 'date');
+    const date = dateRaw === null ? null : new Date(dateRaw);
+    existing.set(id, {
+      name,
+      date: date !== null && !Number.isNaN(date.getTime()) ? date : null,
+      mailbox: extractFrontmatterValue(head, 'mailbox'),
+    });
   }
-  return seen;
+  return existing;
+}
+
+// Deletes files whose email is no longer on the server. Only files we can
+// positively rule dead are removed: the email's date must sit safely inside
+// the sync window (older mail was never searched, so its absence from
+// serverIds means nothing) and its mailbox must be one we actually synced
+// this run. Everything else — including files with unparseable frontmatter —
+// is left alone.
+function pruneDeletedEmails(
+  dir: string,
+  existing: Map<string, ExistingFile>,
+  serverIds: Set<string>,
+  syncedMailboxes: string[],
+  since: Date,
+): number {
+  const cutoff = since.getTime() + PRUNE_BOUNDARY_MARGIN_MS;
+  let deleted = 0;
+  for (const [id, file] of existing) {
+    if (serverIds.has(id)) continue;
+    if (!file.date || file.date.getTime() < cutoff) continue;
+    if (!file.mailbox || !syncedMailboxes.includes(file.mailbox)) continue;
+    rmSync(join(dir, file.name), { force: true });
+    deleted++;
+  }
+  return deleted;
 }
 
 // A truncated file whose frontmatter already contains the message-id would
@@ -126,6 +161,7 @@ async function syncMailbox(
   since: Date,
   dir: string,
   seen: Set<string>,
+  serverIds: Set<string>,
   counts: SyncCounts,
 ): Promise<void> {
   const lock = await client.getMailboxLock(mailbox);
@@ -142,6 +178,7 @@ async function syncMailbox(
     for await (const msg of client.fetch(uids, { envelope: true }, { uid: true })) {
       progress.update(`${mailbox}: checking ${++checked}/${uids.length}`);
       const messageId = (msg.envelope?.messageId ?? '').trim();
+      if (messageId !== '') serverIds.add(messageId); // still alive on the server — protect from pruning
       if (messageId !== '' && seen.has(messageId)) {
         counts.skipped++;
         continue;
@@ -183,13 +220,17 @@ async function syncMailbox(
 }
 
 async function syncAccount(account: ImapAccount, since: Date): Promise<SyncCounts> {
-  const counts: SyncCounts = { written: 0, skipped: 0, errors: 0 };
+  const counts: SyncCounts = { written: 0, skipped: 0, deleted: 0, errors: 0 };
   const dir = account.syncPath;
   mkdirSync(dir, { recursive: true });
+  const existing = collectExistingFiles(dir);
   // Shared across mailboxes, so a message that lives in both INBOX and Sent
   // (e.g. mail to yourself) is written once. INBOX is synced first, so the
   // received copy wins.
-  const seen = collectExistingMessageIds(dir);
+  const seen = new Set(existing.keys());
+  // Every message-id observed on the server this run, whether or not it was
+  // already synced — the ground truth pruning compares against.
+  const serverIds = new Set<string>();
 
   const client = createImapClient(account);
   await client.connect();
@@ -199,8 +240,12 @@ async function syncAccount(account: ImapAccount, since: Date): Promise<SyncCount
     if (sent) mailboxes.push(sent);
     else console.error(`${account.label}: no Sent mailbox found — syncing INBOX only`);
     for (const mailbox of mailboxes) {
-      await syncMailbox(client, mailbox, since, dir, seen, counts);
+      await syncMailbox(client, mailbox, since, dir, seen, serverIds, counts);
     }
+    // Runs only after every mailbox listed its messages without throwing —
+    // an aborted sync leaves serverIds incomplete and must not delete anything
+    // (a mid-run failure propagates out of the loop above and skips this).
+    counts.deleted = pruneDeletedEmails(dir, existing, serverIds, mailboxes, since);
     return counts;
   } finally {
     await closeImapClient(client);
@@ -218,21 +263,22 @@ export async function runSync(config: Config, since: Date = computeSinceDate()):
   console.log(dim(`Syncing INBOX + Sent mail since ${since.toDateString()}`));
 
   let allOk = true;
-  const totals: SyncCounts = { written: 0, skipped: 0, errors: 0 };
+  const totals: SyncCounts = { written: 0, skipped: 0, deleted: 0, errors: 0 };
   for (const account of config.accounts) {
     try {
       const counts = await syncAccount(account, since);
       totals.written += counts.written;
       totals.skipped += counts.skipped;
+      totals.deleted += counts.deleted;
       totals.errors += counts.errors;
       const errorPart = counts.errors > 0 ? red(`${counts.errors} errors`) : green('0 errors');
-      console.log(`${bold(account.label)}: ${counts.written} new · ${counts.skipped} skipped · ${errorPart} → ${account.syncPath}`);
+      console.log(`${bold(account.label)}: ${counts.written} new · ${counts.skipped} skipped · ${counts.deleted} deleted · ${errorPart} → ${account.syncPath}`);
       if (counts.errors > 0) allOk = false;
     } catch (err) {
       allOk = false;
       console.error(`${bold(account.label)}: ${red(`FAILED — ${describeImapError(err, account.host, account.port)}`)}`);
     }
   }
-  console.log(dim(`Total: ${totals.written} new · ${totals.skipped} skipped · ${totals.errors} errors`));
+  console.log(dim(`Total: ${totals.written} new · ${totals.skipped} skipped · ${totals.deleted} deleted · ${totals.errors} errors`));
   return allOk;
 }
