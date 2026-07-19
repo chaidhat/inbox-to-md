@@ -14,7 +14,7 @@ import { loadConfig } from './config.js';
 import { closeImapClient, createImapClient, describeImapError } from './imap.js';
 import { extractFrontmatterValue, extractMessageId, readFrontmatterHead } from './markdown.js';
 
-const USAGE = 'Usage: npm run archive <md dir>';
+const USAGE = 'Usage: inbox-to-md archive <md dir>';
 
 interface ArchiveTarget {
   path: string;

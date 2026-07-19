@@ -1,5 +1,6 @@
-// `npm run compact` — hierarchically compact every synced email down to a
-// single markdown digest under TARGET_TOKENS tokens (docs/algo-1.md).
+// `npm run compact` — for each account, hierarchically compact its synced
+// emails down to a single markdown digest under TARGET_TOKENS tokens
+// (docs/algo-1.md), written to <syncPath>/compacted/final.md.
 //
 // Each layer: greedily pack the input strings into windows of at most
 // TARGET_TOKENS tokens, have Claude compact each window in parallel, save
@@ -14,11 +15,12 @@
 // window), so estimation error only shifts where windows split.
 
 import { query } from '@anthropic-ai/claude-agent-sdk';
+import { createHash } from 'crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { loadConfig } from './config.js';
 import { COMPACT_SYSTEM_PROMPT } from './prompts.js';
-import { getEmail, getEmailCitationKey, getNumberOfEmails } from './ref-emails.js';
+import { listSyncedEmails, readSyncedEmail } from './ref-emails.js';
 
 const MODEL = 'claude-sonnet-5';
 const TARGET_TOKENS = 100_000;
@@ -30,10 +32,6 @@ const TARGET_TOKENS = 100_000;
 const MODEL_WINDOW_CAP = 400_000;
 const WINDOW_TOKEN_BUDGET = Math.floor(Math.min(TARGET_TOKENS, MODEL_WINDOW_CAP) * 0.98);
 const CONCURRENCY = 8;
-// Digest output lives alongside the synced emails, not in the repo. The
-// digest spans all accounts but needs one home; the first account's syncPath
-// is used.
-const OUTPUT_DIR = join(loadConfig().accounts[0]?.syncPath ?? '.', 'compacted');
 
 // Synced emails inline attachments as base64 data URIs — megabytes of
 // encoded bytes that carry nothing a text digest can use, blow the token
@@ -53,6 +51,29 @@ function stripInlineAttachments(email: string): string {
 export function estimateTokens(str: string): number {
   if (str.trim() === '') return 0;
   return Math.ceil(str.length / 3.5);
+}
+
+// Saved window digests start with a checksum of the window's *input* text,
+// so a re-run only reuses a digest when the underlying window content is
+// unchanged (new/edited emails shift window boundaries and must recompact).
+// The header is stripped before the digest feeds the next layer.
+const CHECKSUM_RE = /^<!-- input-checksum: ([0-9a-f]{64}) -->\n/;
+
+function checksum(text: string): string {
+  return createHash('sha256').update(text).digest('hex');
+}
+
+// Returns the saved digest if it was produced from this exact window text,
+// or null when missing, stale, checksum-less (pre-checksum run), or a
+// failure placeholder — all of which mean the window must be recompacted.
+function readReusableDigest(outPath: string, windowText: string): string | null {
+  if (!existsSync(outPath)) return null;
+  const existing = readFileSync(outPath, 'utf8');
+  const match = CHECKSUM_RE.exec(existing);
+  if (match === null || match[1] !== checksum(windowText)) return null;
+  const digest = existing.slice(match[0].length);
+  if (digest.startsWith('> [!warning]')) return null;
+  return digest;
 }
 
 // One model call: compact a single window's text. Returns the digest, or a
@@ -85,11 +106,13 @@ async function compactWindow(
   return { failure: 'stream ended without a result message' };
 }
 
-// One layer of the recursion. `layer` is internal bookkeeping for the
-// compacted/k_<layer>/ output paths; callers pass only (strs, target).
+// One layer of the recursion over one account's emails. `outputDir` is that
+// account's compacted/ directory; `layer` is internal bookkeeping for its
+// k_<layer>/ subpaths — callers pass only (strs, target, outputDir).
 export async function compact(
   strs: string[],
   targetNumberOfTokens: number,
+  outputDir: string,
   layer = 0,
 ): Promise<string> {
   const budget = Math.min(targetNumberOfTokens, WINDOW_TOKEN_BUDGET);
@@ -135,7 +158,7 @@ export async function compact(
 
   console.log(`layer ${layer}: ${strs.length} inputs (~${total} tokens) → ${windows.length} windows`);
 
-  const layerDir = join(OUTPUT_DIR, `k_${layer}`);
+  const layerDir = join(outputDir, `k_${layer}`);
   mkdirSync(layerDir, { recursive: true });
 
   // Compact each window with the model, in bounded-concurrency batches (each
@@ -146,27 +169,26 @@ export async function compact(
     const results = await Promise.all(
       batch.map(async (windowText, offset) => {
         const m = start + offset;
-        // Resume support: windowing is deterministic for the same inputs, so
-        // a digest left by an earlier interrupted run is still valid. Failure
-        // placeholders don't count — a re-run retries those windows.
+        // Resume support: a digest left by an earlier run is reused only if
+        // its recorded input checksum still matches this window's text.
+        // Failure placeholders don't count — a re-run retries those windows.
         const outPath = join(layerDir, `${m}.md`);
-        if (existsSync(outPath)) {
-          const existing = readFileSync(outPath, 'utf8');
-          if (!existing.startsWith('> [!warning]')) {
-            console.log(`layer ${layer}: reusing existing window ${m}`);
-            return existing;
-          }
+        const reusable = readReusableDigest(outPath, windowText);
+        if (reusable !== null) {
+          console.log(`layer ${layer}: reusing existing window ${m}`);
+          return reusable;
         }
+        const checksumHeader = `<!-- input-checksum: ${checksum(windowText)} -->\n`;
         const result = await compactWindow(windowText);
         // A refusal on one window (e.g. a phishing email in the archive)
         // must not kill the run: record it visibly and keep going.
         if ('failure' in result) {
           console.warn(`layer ${layer}: window ${m} NOT compacted (${result.failure}) — placeholder written`);
           const placeholder = `> [!warning] Window ${m} of layer ${layer} was not compacted (${result.failure}); its content is omitted from this digest.\n`;
-          writeFileSync(outPath, placeholder);
+          writeFileSync(outPath, checksumHeader + placeholder);
           return placeholder;
         }
-        writeFileSync(outPath, result.text);
+        writeFileSync(outPath, checksumHeader + result.text);
         console.log(`layer ${layer}: compacted window ${m}`);
         return result.text;
       }),
@@ -174,29 +196,36 @@ export async function compact(
     compacted.push(...results);
   }
 
-  return compact(compacted, targetNumberOfTokens, layer + 1);
+  return compact(compacted, targetNumberOfTokens, outputDir, layer + 1);
 }
 
 export async function main(): Promise<void> {
-  const n = getNumberOfEmails();
-  if (n === 0) {
-    console.error('no synced emails found — run `npm start` first');
-    process.exitCode = 1;
-    return;
+  let compactedAny = false;
+  for (const account of loadConfig().accounts) {
+    const synced = listSyncedEmails(account.syncPath);
+    if (synced.length === 0) {
+      console.warn(`${account.username}: no synced emails found — skipping`);
+      continue;
+    }
+    compactedAny = true;
+    console.log(`compacting ${synced.length} emails from ${account.username} to <= ${TARGET_TOKENS} tokens with ${MODEL}`);
+    // Each email is prefixed with its citation key so the model can attribute
+    // every digest fact to its source file (see COMPACT_SYSTEM_PROMPT).
+    const emails = synced.map(
+      (email) =>
+        `\n<!-- source: ${email.citationKey} -->\n${stripInlineAttachments(readSyncedEmail(email))}`,
+    );
+    const outputDir = join(account.syncPath, 'compacted');
+    const digest = await compact(emails, TARGET_TOKENS, outputDir);
+    mkdirSync(outputDir, { recursive: true });
+    const finalPath = join(outputDir, 'final.md');
+    writeFileSync(finalPath, digest);
+    console.log(`${account.username}: final digest written to ${finalPath}`);
   }
-  console.log(`compacting ${n} emails to <= ${TARGET_TOKENS} tokens with ${MODEL}`);
-  // Each email is prefixed with its citation key so the model can attribute
-  // every digest fact to its source file (see COMPACT_SYSTEM_PROMPT).
-  const emails = Array.from(
-    { length: n },
-    (_, k) =>
-      `\n<!-- source: ${getEmailCitationKey(k)} -->\n${stripInlineAttachments(getEmail(k))}`,
-  );
-  const digest = await compact(emails, TARGET_TOKENS);
-  mkdirSync(OUTPUT_DIR, { recursive: true });
-  const finalPath = join(OUTPUT_DIR, 'final.md');
-  writeFileSync(finalPath, digest);
-  console.log(`done — final digest written to ${finalPath}`);
+  if (!compactedAny) {
+    console.error('no synced emails found for any account — run `npm start` first');
+    process.exitCode = 1;
+  }
 }
 
 main().catch((err: unknown) => {

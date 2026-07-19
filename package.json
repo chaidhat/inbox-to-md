@@ -1,11 +1,36 @@
 {
   "name": "inbox-to-md",
   "version": "0.1.0",
-  "description": "Convert inbox messages to Markdown",
+  "description": "Sync IMAP inboxes to Markdown files — one file per email, with YAML frontmatter",
   "type": "module",
-  "main": "dist/index.js",
+  "bin": {
+    "inbox-to-md": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "imap",
+    "email",
+    "markdown",
+    "inbox",
+    "sync",
+    "cli"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chaidhat/inbox-to-md.git"
+  },
+  "homepage": "https://github.com/chaidhat/inbox-to-md#readme",
+  "bugs": {
+    "url": "https://github.com/chaidhat/inbox-to-md/issues"
+  },
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "auth": "tsx src/auth.ts",
     "dev": "tsx src/index.ts",
     "start": "tsx src/index.ts",
@@ -14,6 +39,7 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^26.1.1",
     "@types/turndown": "^5.0.6",
     "tsx": "^4.19.0",
     "typescript": "^5.5.0"

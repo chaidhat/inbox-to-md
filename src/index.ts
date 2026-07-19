@@ -8,7 +8,7 @@ import { red } from './ansi.js';
 import { loadConfig } from './config.js';
 import { runSync } from './sync.js';
 
-const USAGE = 'Usage: npm start [-- --since YYYY-MM-DD] [--force-rewrite]';
+const USAGE = 'Usage: inbox-to-md sync [--since YYYY-MM-DD] [--force-rewrite]';
 
 // Strict YYYY-MM-DD, validated by round-trip so e.g. 2026-02-31 is rejected
 // rather than silently rolling over into March.
