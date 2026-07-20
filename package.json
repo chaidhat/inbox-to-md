@@ -1,6 +1,6 @@
 {
   "name": "inbox-to-md",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Sync IMAP inboxes to Markdown files — one file per email, with YAML frontmatter",
   "type": "module",
   "bin": {
