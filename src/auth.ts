@@ -4,11 +4,9 @@
 // over IMAP before anything is saved.
 
 import { randomUUID } from 'crypto';
-import { mkdirSync } from 'fs';
-import { isAbsolute } from 'path';
 import { dim, red } from './ansi.js';
-import { CONFIG_PATH, expandTilde, loadConfig, saveConfig, type Config, type ImapAccount } from './config.js';
-import { closeImapClient, createImapClient, describeImapError } from './imap.js';
+import { parseAccountValues, parseAndVerifyAccount, type AccountValues } from './account-auth.js';
+import { CONFIG_PATH, loadConfig, saveConfig, type Config, type ImapAccount } from './config.js';
 import { enterTui, exitTui, pickFromMenu, runForm, type FormField, type MenuOption } from './tui.js';
 
 const MENU_FOOTER = '[↑/↓] select · [enter] edit/add · [ctrl+x] delete · [esc] quit';
@@ -23,38 +21,12 @@ function errorMessage(err: unknown): string {
 // success proves host, port, TLS mode, and credentials in one shot.
 // Returns null on success or the error string to show in red.
 async function verifyAccount(values: Record<string, string>): Promise<string | null> {
-  if (values.label.trim() === '') return 'Label is required';
-  if (values.host.trim() === '') return 'IMAP host is required';
-  const port = parseInt(values.port, 10);
-  if (!Number.isInteger(port) || port < 1 || port > 65535) return 'Port must be between 1 and 65535';
-  if (values.username.trim() === '') return 'Username is required';
-  if (values.password === '') return 'Password is required';
-
-  const syncPath = expandTilde(values.syncPath.trim());
-  if (syncPath === '') return 'Sync path is required';
-  if (!isAbsolute(syncPath)) return 'Sync path must be absolute (or start with ~)';
-  // Create the directory now so a bad path fails here, visibly, instead of
-  // at sync time.
   try {
-    mkdirSync(syncPath, { recursive: true });
+    await parseAndVerifyAccount(values as unknown as AccountValues);
+    return null;
   } catch (err) {
-    return `Cannot create ${syncPath}: ${errorMessage(err)}`;
+    return errorMessage(err);
   }
-
-  const client = createImapClient({
-    host: values.host.trim(),
-    port,
-    tls: values.tls === 'yes',
-    username: values.username.trim(),
-    password: values.password,
-  });
-  try {
-    await client.connect();
-  } catch (err) {
-    return describeImapError(err, values.host.trim(), port);
-  }
-  await closeImapClient(client);
-  return null;
 }
 
 function accountFields(existing: ImapAccount | null): FormField[] {
@@ -84,13 +56,7 @@ async function editAccount(config: Config, index: number | null): Promise<void> 
 
   const account: ImapAccount = {
     id: existing?.id ?? randomUUID(),
-    label: result.label.trim(),
-    host: result.host.trim(),
-    port: parseInt(result.port, 10),
-    tls: result.tls === 'yes',
-    username: result.username.trim(),
-    password: result.password,
-    syncPath: expandTilde(result.syncPath.trim()),
+    ...parseAccountValues(result as unknown as AccountValues),
   };
   if (index === null) config.accounts.push(account);
   else config.accounts[index] = account;

@@ -3,6 +3,7 @@
 // modules the npm scripts use:
 //
 //   inbox-to-md auth                     manage IMAP accounts (interactive TUI)
+//   inbox-to-md authcli <action> [...]   manage IMAP accounts (flags + JSON)
 //   inbox-to-md sync [flags]             sync inboxes to markdown (default command)
 //   inbox-to-md compact                  compact synced emails into one digest
 //   inbox-to-md archive <md dir>         archive the emails behind the .md files
@@ -16,6 +17,7 @@ import { createRequire } from 'module';
 const COMMANDS: Record<string, string> = {
   sync: './index.js',
   auth: './auth.js',
+  authcli: './authcli.js',
   compact: './compact.js',
   archive: './archive.js',
 };
@@ -24,6 +26,7 @@ const USAGE = `Usage: inbox-to-md <command>
 
 Commands:
   auth                 manage IMAP accounts (interactive TUI)
+  authcli <action>     manage IMAP accounts non-interactively (flags + JSON)
   sync [--since YYYY-MM-DD] [--force-rewrite]
                        sync inboxes to markdown (default command)
   compact              compact synced emails into one digest per account

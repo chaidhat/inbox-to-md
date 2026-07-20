@@ -32,6 +32,7 @@
     "build": "tsc",
     "prepublishOnly": "npm run build",
     "auth": "tsx src/auth.ts",
+    "authcli": "tsx src/authcli.ts",
     "dev": "tsx src/index.ts",
     "start": "tsx src/index.ts",
     "archive": "tsx src/archive.ts",
