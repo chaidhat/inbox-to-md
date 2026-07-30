@@ -1,6 +1,6 @@
 ---
 name: verify
-description: How to verify inbox-to-md end-to-end - drive the auth CLI and sync against a local fake IMAP server and fake Google OAuth endpoints, without real credentials or touching a real config.
+description: How to verify inbox-to-md end-to-end - drive the auth CLI and sync against a local fake IMAP server, a fake Gmail HTTP API, and fake Google OAuth endpoints, without real credentials or touching a real config.
 ---
 
 # Verifying inbox-to-md
@@ -34,8 +34,23 @@ LIST gotcha: imapflow first sends `LIST "" ""` (root/delimiter discovery) and
 builds every mailbox path from the reply — that command must return ONLY
 `* LIST (\Noselect) "/" ""`, not the mailbox list, or paths get a bogus
 prefix and SELECT hits the wrong mailbox. Answer the real `LIST … *` with the
-mailbox lines (mark Sent with the `\Sent` flag). Make unknown SELECT return
-`NO` so a wrong path fails loudly instead of silently syncing INBOX twice.
+mailbox lines. Make unknown SELECT return `NO` so a wrong path fails loudly
+instead of silently syncing INBOX twice.
+
+specialUse trap: imapflow's `ListResponse.specialUse` awards each type to one
+winning mailbox and skips a mailbox that already holds another type, so a
+mailbox the server flags `\All` or `\Sent` routinely arrives with `specialUse`
+undefined — Gmail's shape does exactly this. `hasSpecialUse` in `integration/imap/client.ts` reads
+`flags` first for that reason. A fake server must therefore put the flags in
+the LIST reply itself, and a test that only checks `specialUse` will pass while
+the real client fails.
+
+What that reply contains now decides what gets synced: `sync` walks INBOX plus
+every listed mailbox that is selectable and not `\Trash`/`\Junk` (by flag or by
+name), or — if any mailbox carries `\All` — INBOX plus that one alone. So the
+fake server must answer SELECT and UID SEARCH for every mailbox it lists, and
+the list is the lever for testing coverage: add a plain `Notes` mailbox, a
+`\Trash` one, and a `\Sent` one, then assert which messages land on disk.
 
 To test OAuth accounts the same server needs `AUTH=XOAUTH2` in its CAPABILITY
 and must handle `<tag> AUTHENTICATE XOAUTH2 <base64>` inline (imapflow sends the
@@ -47,10 +62,10 @@ makes `describeImapError` produce the reauth hint.
 
 ## Fake Google OAuth
 
-`authorize()` and `getAccessToken()` in `src/oauth.ts` take an `endpoints`
-argument that defaults to Google. There is no env override on purpose — a test
-harness injects its own endpoints by importing the module directly (`dist/oauth.js`
-from a scratch `.mjs` script). A fake server needs `/authorize` (302 straight back
+`authorize()` and `getAccessToken()` in `src/integration/oauth.ts` take an
+`endpoints` argument that defaults to Google. There is no env override on purpose
+— a test harness injects its own endpoints by importing the module directly
+(`dist/integration/oauth.js` from a scratch `.mjs` script). A fake server needs `/authorize` (302 straight back
 to `redirect_uri` with `code` + the same `state`, standing in for the browser) and
 `/token` (checking client id/secret, PKCE S256 verifier vs. challenge,
 `redirect_uri`, and the grant type). `authorize({announce})` receives the consent
@@ -68,6 +83,30 @@ The shipped CLI always talks to the real Google, so end-to-end OAuth through
 and assert the printed URL (scope, `access_type=offline`, `prompt=consent`,
 `code_challenge_method=S256`, loopback `redirect_uri`) and the clean timeout.
 
+## Fake Gmail API
+
+The `gmail` transport is chosen automatically for OAuth accounts on a Gmail
+host, so a config with `host: imap.gmail.com` and `auth: oauth` exercises it —
+check `auth list`, which reports the effective `transport`. Point the client at
+a fake with `INBOX_TO_MD_GMAIL_API_BASE=http://127.0.0.1:<port>/gmail/v1/users/me`.
+That variable only accepts loopback (it decides where a bearer token is sent) and
+fails closed on anything else, which is itself worth asserting.
+
+The fake needs `GET /messages` (honouring `q=after:YYYY/MM/DD` and
+`rfc822msgid:`, excluding TRASH/SPAM), `GET /messages/{id}` for `format=metadata`
+and `format=full` (body parts are base64url in `body.data`), `GET /history`
+(404 when `startHistoryId` is too old — that is the expiry path, not an error),
+`GET /profile` for the historyId, and `POST /messages/{id}/modify`. Re-read the
+spec file per request so a test can change the mailbox mid-run. Logging one line
+per request is what makes the incremental assertions possible: the point of the
+transport is the requests it *doesn't* make.
+
+Worth covering: the first full sweep; a second run that goes through `/history`
+and issues no `/messages` list or get at all; an add and a delete arriving via
+history; an expired historyId falling back to a full sweep that reuses the id
+index rather than re-fetching metadata; and archive removing the INBOX label
+rather than moving anything.
+
 ## Flows worth driving
 
 - `auth add --auth password` against the fake server: JSON `ok`, no password in
@@ -75,6 +114,13 @@ and assert the printed URL (scope, `access_type=offline`, `prompt=consent`,
 - Wrong password → JSON error on stderr, exit 1, nothing stored.
 - `sync` twice: first run N new, second run 0 new (envelope-only phase).
 - Delete one .md, re-run: exactly that file comes back.
+- Mailbox coverage: mail in a non-special mailbox is synced; mail only in
+  `\Trash`/`\Junk` is not; a message in both INBOX and another mailbox is
+  written once, with `mailbox: "INBOX"`, and counted skipped once, not once per
+  mailbox. With a `\All` mailbox present, the other labels are never SELECTed.
+- One mailbox failing SELECT: the account's other mailboxes still sync, the run
+  exits 1, and nothing is pruned (serverIds is incomplete) — remove a message
+  from the server in the same run to prove no file was deleted.
 - OAuth account whose cached `accessToken` is still valid → `sync` authenticates
   via XOAUTH2 and never contacts Google; a stale token → exit 1 with the reauth hint.
 - Cross-method flag rejection: `--password` on `--auth oauth`, `--client-id` on
@@ -86,5 +132,9 @@ and assert the printed URL (scope, `access_type=offline`, `prompt=consent`,
   direct run.
 - A v1 config (no `auth` field) still loads as password accounts, is not
   rewritten on read, and becomes v2 on the next write.
+- A config with no `transport` field still loads, and `auth list` reports the
+  derived one: `gmail` for OAuth on a Gmail host, `imap` otherwise.
+- `--transport imap` on a Google account forces the IMAP path; `--transport
+  gmail` on a password account is refused with advice rather than a crash.
 - Corrupt config.json → every command prints the fix-or-delete error, file
   untouched.

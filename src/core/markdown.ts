@@ -3,9 +3,9 @@
 // live together so the frontmatter format has exactly one owner.
 
 import { createHash } from 'crypto';
-import { closeSync, openSync, readSync } from 'fs';
+import { closeSync, openSync, readSync, readdirSync } from 'fs';
+import { join } from 'path';
 import TurndownService from 'turndown';
-import type { AttachmentInfo } from './mime.js';
 
 const turndown = new TurndownService();
 
@@ -25,9 +25,16 @@ function yamlValue(s: string): string {
   return JSON.stringify(s);
 }
 
-// Everything renderEmail needs, decoupled from any IMAP/parser library:
-// the sync engine assembles this from the envelope, body structure, and the
-// one downloaded text part.
+// An attachment described from message metadata alone — its bytes are never
+// downloaded, by either backend.
+export interface AttachmentInfo {
+  name: string;
+  size: number;
+  contentType: string;
+}
+
+// Everything renderEmail needs, decoupled from any particular mail backend:
+// each integration assembles this from whatever its protocol gives it.
 export interface EmailContent {
   from: string;
   to: string;
@@ -39,7 +46,7 @@ export interface EmailContent {
   attachments: AttachmentInfo[];
 }
 
-export function slugify(s: string): string {
+function slugify(s: string): string {
   const slug = s
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -108,7 +115,7 @@ export function renderEmail(email: EmailContent, fallbackDate: Date, mailbox: st
 // line that looks like frontmatter, so matching past the closing --- would
 // let a hostile email poison the dedupe set. `key` must be a literal key we
 // wrote ourselves (it is interpolated into a regex unescaped).
-export function extractFrontmatterValue(fileHead: string, key: string): string | null {
+function extractFrontmatterValue(fileHead: string, key: string): string | null {
   if (!fileHead.startsWith('---\n')) return null;
   const end = fileHead.indexOf('\n---', 4);
   const frontmatter = end === -1 ? fileHead : fileHead.slice(0, end);
@@ -122,10 +129,6 @@ export function extractFrontmatterValue(fileHead: string, key: string): string |
   }
 }
 
-export function extractMessageId(fileHead: string): string | null {
-  return extractFrontmatterValue(fileHead, 'message-id');
-}
-
 // How much of each file to read when scanning for frontmatter values.
 // Frontmatter is a handful of single-line quoted scalars, but from/to lists
 // with many recipients can get long — 8 KB leaves a wide margin.
@@ -134,7 +137,7 @@ const FRONTMATTER_SCAN_BYTES = 8192;
 // Reads just the head of a previously written file, enough to cover its
 // frontmatter. Returns null when the file can't be opened (e.g. it vanished
 // between readdir and open).
-export function readFrontmatterHead(path: string): string | null {
+function readFrontmatterHead(path: string): string | null {
   let fd: number;
   try {
     fd = openSync(path, 'r');
@@ -148,4 +151,42 @@ export function readFrontmatterHead(path: string): string | null {
   } finally {
     closeSync(fd);
   }
+}
+
+export interface SyncedFile {
+  name: string; // basename including the .md extension
+  path: string;
+}
+
+// Every email markdown file in a sync directory, oldest first: filenames start
+// with a YYYY-MM-DD stamp (see buildFilename), so ordering by codepoint orders
+// by date. Codepoint rather than locale order so the result does not depend on
+// the machine's locale.
+export function listSyncedFiles(dir: string): SyncedFile[] {
+  return readdirSync(dir)
+    .filter((name) => name.endsWith('.md'))
+    .sort()
+    .map((name) => ({ name, path: join(dir, name) }));
+}
+
+// The frontmatter fields that identify a previously written file. Each is null
+// when the file could not be read, the field is absent, or its value doesn't
+// parse — callers decide what a missing field means for them, since "we cannot
+// tell" must never be mistaken for a real value.
+export interface SyncedFrontmatter {
+  messageId: string | null;
+  mailbox: string | null;
+  date: Date | null;
+}
+
+export function readSyncedFrontmatter(path: string): SyncedFrontmatter {
+  const head = readFrontmatterHead(path);
+  if (head === null) return { messageId: null, mailbox: null, date: null };
+  const rawDate = extractFrontmatterValue(head, 'date');
+  const date = rawDate === null ? null : new Date(rawDate);
+  return {
+    messageId: extractFrontmatterValue(head, 'message-id'),
+    mailbox: extractFrontmatterValue(head, 'mailbox'),
+    date: date !== null && !Number.isNaN(date.getTime()) ? date : null,
+  };
 }

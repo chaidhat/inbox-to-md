@@ -65,6 +65,8 @@ printf '%s\n' "$IMAP_APP_PASSWORD" | inbox-to-md auth add \
 
 Treat an exit code of `0` and JSON with `"ok":true` on stdout as success. On failure, read the JSON error from stderr and use its message to correct the request. Never echo or log a password. Although `--password <password>` is supported, prefer `--password-stdin` because command-line arguments may appear in process listings and shell history.
 
+Each listed account reports a `transport`, which is how it fetches mail: `gmail` (the Gmail HTTP API, chosen automatically for Google OAuth accounts because it syncs only what changed since the last run) or `imap` (everything else). It is derived, so nothing needs configuring; pass `--transport imap` to `add` or `edit` to force the IMAP path for a Google account.
+
 Use the ID returned by `add` or `list` to edit or delete an account. `edit` preserves fields that are not supplied and re-verifies the resulting login before saving. `delete` removes only the configuration entry, not already-synced Markdown files. If a sync fails with a message about a revoked or expired OAuth grant, re-run consent with `reauth` — it blocks on the browser exactly like `add --auth oauth`.
 
 ```sh

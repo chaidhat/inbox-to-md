@@ -11,15 +11,13 @@ there is no interactive setup.
 
 inbox-to-md will:
 
-1. Download mail from `INBOX` and `Sent` and write it to Markdown files on your computer.
-2. Delete a local Markdown file when its email has disappeared from the server (`sync`), so the directory mirrors the mailbox.
-3. Move `INBOX` messages to the account's `Archive` mailbox, and delete the local file, but **only** for the files you point `inbox-to-md archive` at.
-4. Send the text of your synced emails to Anthropic when you run `inbox-to-md compact`, which summarizes them with Claude through the Claude Agent SDK and your local Claude Code login.
+1. Download mail from `inbox` and `sent` and write it to Markdown files on your computer.
+2. Compact your mail into a markdown below a certain token count, via Anthropic.
 
 inbox-to-md will not and can not:
 
 1. Delete mail on the server, send mail, or modify a message's content or flags.
-2. Upload your mail anywhere other than the summarization described above, which only runs when you run `compact`.
+2. Upload your mail anywhere other than to Anthropic during `compact`.
 
 Credentials — IMAP passwords and OAuth refresh tokens — are stored **in plaintext**
 in `~/.config/inbox-to-md/config.json`, written `0600` inside a `0700` directory.
@@ -59,7 +57,7 @@ npx inbox-to-md sync
 
 ```sh
 inbox-to-md auth <action>       # manage accounts non-interactively (flags + JSON)
-inbox-to-md sync                # sync INBOX and Sent mail from this month and last month
+inbox-to-md sync                # sync all mail from this month and last month
 inbox-to-md compact             # compact all messages into one Markdown file
 inbox-to-md archive <md dir>    # archive the emails represented by files in a directory
 ```
@@ -70,6 +68,40 @@ Sync from a specific date or overwrite messages that have already been downloade
 inbox-to-md sync --since 2026-01-01
 inbox-to-md sync --force-rewrite
 ```
+
+`sync` covers every mailbox the account can see within the date window — inbox,
+sent, and any other folder or label — except Trash and Spam. A message that
+appears in several mailboxes is written once, with the mailbox it was first seen
+in recorded in its frontmatter. An email that disappears from the server is
+removed from disk on the next clean sync.
+
+### Transports
+
+Mail is fetched over one of two backends:
+
+| | `gmail` | `imap` |
+| --- | --- | --- |
+| Used for | Google accounts authenticated with OAuth | everything else |
+| How it syncs | asks Gmail what changed since the last run | lists the window every run |
+| Needs | the OAuth grant you already have | host, port, TLS |
+
+Google OAuth accounts use `gmail` automatically — no migration and no
+re-consent, because the `https://mail.google.com/` scope already covers the
+Gmail API. It is chosen because it syncs *incrementally*: after the first run it
+asks only for what changed, so an unchanged mailbox costs one request instead of
+one per message. When Google expires the resume point, it falls back to a full
+listing on its own.
+
+Everything else uses `imap`, which is also the fallback if you prefer it:
+
+```sh
+inbox-to-md auth edit --id <account-id> --transport imap
+inbox-to-md auth list        # "transport" shows what each account will use
+```
+
+The Gmail backend keeps its resume point in `.inbox-to-md-gmail.json` inside the
+sync directory. It is a cache, never a source of truth — delete it (or the whole
+directory) and the next run rebuilds it.
 
 ## Authentication
 

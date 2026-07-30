@@ -5,8 +5,9 @@
 // connected client.
 
 import { ImapFlow } from 'imapflow';
-import type { Account, AccountDraft, AuthMethod } from './config.js';
-import { getAccessToken } from './oauth.js';
+import type { ListResponse } from 'imapflow';
+import type { Account, AccountDraft, AuthMethod } from '../../core/config.js';
+import { getAccessToken } from '../oauth.js';
 
 // Stored accounts and not-yet-stored drafts both connect the same way.
 export type ImapTarget = Account | AccountDraft;
@@ -52,6 +53,20 @@ export async function closeImapClient(client: ImapFlow): Promise<void> {
   } catch {
     client.close();
   }
+}
+
+// Whether a listed mailbox carries an RFC 6154 special-use flag such as \All
+// or \Sent.
+//
+// The raw LIST flags decide first, because imapflow's `specialUse` is a lossy
+// summary: it awards each type to a single winning mailbox and skips any
+// mailbox that already holds another type, so a mailbox the server explicitly
+// flagged \All can come back with no `specialUse` at all (Gmail's All Mail and
+// Sent Mail both do). `specialUse` is still worth consulting second — it is
+// what detects Trash and Junk by localized name on servers that advertise no
+// special-use flags whatsoever.
+export function hasSpecialUse(mailbox: ListResponse, flag: string): boolean {
+  return mailbox.flags.has(flag) || mailbox.specialUse === flag;
 }
 
 export function describeImapError(

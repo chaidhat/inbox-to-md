@@ -17,8 +17,9 @@ import { spawn } from 'child_process';
 import { createHash, randomBytes } from 'crypto';
 import { readFileSync } from 'fs';
 import { createServer, type ServerResponse } from 'http';
-import { dim } from './ansi.js';
-import { loadConfig, saveConfig, type OAuthAccount, type OAuthCredentials } from './config.js';
+import { dim } from '../core/ansi.js';
+import { loadConfig, saveConfig, type OAuthAccount, type OAuthCredentials } from '../core/config.js';
+import { errorMessage } from '../core/errors.js';
 
 export interface OAuthEndpoints {
   authorization: string;
@@ -58,10 +59,6 @@ export class OAuthError extends Error {
     super(message);
     this.name = 'OAuthError';
   }
-}
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
 }
 
 function base64Url(bytes: Buffer): string {

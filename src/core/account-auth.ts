@@ -8,8 +8,10 @@
 
 import { mkdirSync } from 'fs';
 import { isAbsolute } from 'path';
+import { openMailSource } from '../integration/open.js';
 import { expandTilde, type AccountDraft, type OAuthCredentials } from './config.js';
-import { closeImapClient, connectImap, describeImapError } from './imap.js';
+import { errorMessage } from './errors.js';
+import type { Transport } from './mail-source.js';
 
 // The connection fields, as strings, exactly as they arrive from CLI flags.
 export interface AccountFieldValues {
@@ -19,6 +21,7 @@ export interface AccountFieldValues {
   tls: string;
   username: string;
   syncPath: string;
+  transport?: string; // absent means "derive it" — see integration/open.ts
 }
 
 export interface ParsedFields {
@@ -28,6 +31,7 @@ export interface ParsedFields {
   tls: boolean;
   username: string;
   syncPath: string;
+  transport?: Transport;
 }
 
 // How the account will authenticate, already resolved: a password from the
@@ -35,10 +39,6 @@ export interface ParsedFields {
 export type CredentialInput =
   | { auth: 'password'; password: string }
   | { auth: 'oauth'; oauth: OAuthCredentials };
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
 
 export function parseFields(fields: AccountFieldValues): ParsedFields {
   const label = fields.label.trim();
@@ -64,7 +64,12 @@ export function parseFields(fields: AccountFieldValues): ParsedFields {
   if (syncPath === '') throw new Error('Sync path is required');
   if (!isAbsolute(syncPath)) throw new Error('Sync path must be absolute (or start with ~)');
 
-  return { label, host, port, tls: fields.tls === 'yes', username, syncPath };
+  const transport = fields.transport;
+  if (transport !== undefined && transport !== 'imap' && transport !== 'gmail') {
+    throw new Error('Transport must be "imap" or "gmail"');
+  }
+
+  return { label, host, port, tls: fields.tls === 'yes', username, syncPath, transport };
 }
 
 export function buildAccount(fields: ParsedFields, credential: CredentialInput): AccountDraft {
@@ -86,16 +91,11 @@ export function ensureSyncDir(syncPath: string): void {
   }
 }
 
-// Verify before saving: a real login proves host, port, TLS mode, and the
-// credential in one shot.
+// Verify before saving: a real connection over the transport the account will
+// actually use proves the host, the credential, and — for OAuth — that the
+// grant carries the scope the transport needs.
 export async function verifyAccount(account: AccountDraft): Promise<void> {
   ensureSyncDir(account.syncPath);
-
-  let client;
-  try {
-    client = await connectImap(account);
-  } catch (err) {
-    throw new Error(describeImapError(err, account));
-  }
-  await closeImapClient(client);
+  const source = await openMailSource(account);
+  await source.close();
 }

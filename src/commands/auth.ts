@@ -17,7 +17,7 @@ import {
   type AccountFieldValues,
   type CredentialInput,
   type ParsedFields,
-} from './account-auth.js';
+} from '../core/account-auth.js';
 import {
   CONFIG_PATH,
   expandTilde,
@@ -27,26 +27,29 @@ import {
   type AuthMethod,
   type Config,
   type OAuthAccount,
-} from './config.js';
+} from '../core/config.js';
+import { errorMessage } from '../core/errors.js';
+import type { Transport } from '../core/mail-source.js';
+import { resolveTransport } from '../integration/open.js';
 import {
   authorize,
   DEFAULT_AUTHORIZE_TIMEOUT_MS,
   GMAIL_IMAP,
   parseClientSecretFile,
   type OAuthClient,
-} from './oauth.js';
+} from '../integration/oauth.js';
 
 type Action = 'list' | 'add' | 'edit' | 'delete' | 'reauth';
 const ACTIONS: Action[] = ['list', 'add', 'edit', 'delete', 'reauth'];
 
 type ValueFlag =
   | 'auth' | 'id' | 'label' | 'host' | 'port' | 'tls' | 'username' | 'password' | 'sync-path'
-  | 'client-id' | 'client-secret' | 'client-secret-file' | 'timeout';
+  | 'transport' | 'client-id' | 'client-secret' | 'client-secret-file' | 'timeout';
 type BooleanFlag = 'password-stdin' | 'no-browser';
 
 const VALUE_FLAGS = new Set<ValueFlag>([
   'auth', 'id', 'label', 'host', 'port', 'tls', 'username', 'password', 'sync-path',
-  'client-id', 'client-secret', 'client-secret-file', 'timeout',
+  'transport', 'client-id', 'client-secret', 'client-secret-file', 'timeout',
 ]);
 const BOOLEAN_FLAGS = new Set<BooleanFlag>(['password-stdin', 'no-browser']);
 
@@ -57,7 +60,7 @@ interface Flags {
 
 // Flags each action accepts. `add` narrows further once --auth is known, so
 // password flags cannot leak into an OAuth account or vice versa.
-const COMMON_FIELD_FLAGS: ValueFlag[] = ['label', 'host', 'port', 'tls', 'username', 'sync-path'];
+const COMMON_FIELD_FLAGS: ValueFlag[] = ['label', 'host', 'port', 'tls', 'username', 'sync-path', 'transport'];
 const OAUTH_CLIENT_FLAGS: ValueFlag[] = ['client-id', 'client-secret', 'client-secret-file', 'timeout'];
 
 const USAGE = `Usage: inbox-to-md auth <action> [options]
@@ -80,6 +83,9 @@ Actions:
 
 Options:
   --auth password|oauth   how the account authenticates (required for add)
+  --transport imap|gmail  how the account reaches its mail. Defaults to gmail for
+                          Google OAuth accounts (incremental, far fewer requests)
+                          and imap for everything else.
   --password-stdin        read the password from stdin without prompting
   --no-browser            print the authorization URL instead of opening a browser
   --timeout <seconds>     how long to wait for the authorization redirect (default ${DEFAULT_AUTHORIZE_TIMEOUT_MS / 1000})
@@ -102,6 +108,10 @@ interface PublicAccount {
   username: string;
   syncPath: string;
   auth: AuthMethod;
+  // The transport actually in effect, derived when the account does not pin
+  // one — so `auth list` answers "how will this sync?" rather than making the
+  // reader re-derive it from the host and auth method.
+  transport: Transport;
   clientId?: string; // OAuth accounts only; a client id is not a secret
 }
 
@@ -117,6 +127,7 @@ function publicAccount(account: Account): PublicAccount {
     username: account.username,
     syncPath: account.syncPath,
     auth: account.auth,
+    transport: resolveTransport(account),
   };
   if (account.auth === 'oauth') safe.clientId = account.oauth.clientId;
   return safe;
@@ -283,6 +294,7 @@ async function add(config: Config, flags: Flags): Promise<void> {
       tls: flags.value.tls ?? 'yes',
       username: required(flags, 'username'),
       syncPath: required(flags, 'sync-path'),
+      transport: flags.value.transport,
     });
     const credential: CredentialInput = { auth: 'password', password: readPassword(flags, true)! };
     const draft = buildAccount(fields, credential);
@@ -302,6 +314,7 @@ async function add(config: Config, flags: Flags): Promise<void> {
     tls: flags.value.tls ?? (GMAIL_IMAP.tls ? 'yes' : 'no'),
     username: required(flags, 'username'),
     syncPath: required(flags, 'sync-path'),
+    transport: flags.value.transport,
   });
   const draft = buildAccount(fields, await authorizeOAuth(flags, fields, client));
   await verifyAccount(draft);
@@ -319,6 +332,7 @@ async function edit(config: Config, flags: Flags): Promise<void> {
     tls: flags.value.tls ?? (existing.tls ? 'yes' : 'no'),
     username: flags.value.username ?? existing.username,
     syncPath: flags.value['sync-path'] ?? existing.syncPath,
+    transport: flags.value.transport ?? existing.transport,
   });
 
   let credential: CredentialInput;
@@ -358,6 +372,7 @@ async function reauth(config: Config, flags: Flags): Promise<void> {
     tls: oauthAccount.tls ? 'yes' : 'no',
     username: oauthAccount.username,
     syncPath: oauthAccount.syncPath,
+    transport: oauthAccount.transport,
   });
   const draft = buildAccount(fields, await authorizeOAuth(flags, fields, client));
   await verifyAccount(draft);
@@ -400,11 +415,8 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err) => {
+main().catch((err: unknown) => {
   if (err instanceof HandledError) return;
-  process.stderr.write(JSON.stringify({
-    ok: false,
-    error: err instanceof Error ? err.message : String(err),
-  }) + '\n');
+  process.stderr.write(JSON.stringify({ ok: false, error: errorMessage(err) }) + '\n');
   process.exitCode = 1;
 });

@@ -1,4 +1,4 @@
-// `npm run compact` — for each account, hierarchically compact its synced
+// Compaction engine — for each account, hierarchically compact its synced
 // emails down to a single markdown digest under TARGET_TOKENS tokens
 // (docs/algo-1.md), written to <syncPath>/compacted/final.md.
 //
@@ -17,10 +17,10 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { createHash } from 'crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
-import { loadConfig } from './config.js';
+import { basename, join } from 'path';
+import type { Config } from './config.js';
+import { listSyncedFiles } from './markdown.js';
 import { COMPACT_SYSTEM_PROMPT } from './prompts.js';
-import { listSyncedEmails, readSyncedEmail } from './ref-emails.js';
 
 const MODEL = 'claude-sonnet-5';
 const TARGET_TOKENS = 100_000;
@@ -48,7 +48,7 @@ function stripInlineAttachments(email: string): string {
 // English prose averages ~4 chars/token; email archives (headers, URLs,
 // encoded content) tokenize denser, so estimate conservatively at 3.5 —
 // overestimating tokens only makes windows smaller, never over budget.
-export function estimateTokens(str: string): number {
+function estimateTokens(str: string): number {
   if (str.trim() === '') return 0;
   return Math.ceil(str.length / 3.5);
 }
@@ -109,7 +109,7 @@ async function compactWindow(
 // One layer of the recursion over one account's emails. `outputDir` is that
 // account's compacted/ directory; `layer` is internal bookkeeping for its
 // k_<layer>/ subpaths — callers pass only (strs, target, outputDir).
-export async function compact(
+async function compact(
   strs: string[],
   targetNumberOfTokens: number,
   outputDir: string,
@@ -199,21 +199,26 @@ export async function compact(
   return compact(compacted, targetNumberOfTokens, outputDir, layer + 1);
 }
 
-export async function main(): Promise<void> {
+// Compacts every configured account's synced emails. Returns false when no
+// account had anything to compact, so the caller can report it as a failure
+// rather than a silent success.
+export async function runCompact(config: Config): Promise<boolean> {
   let compactedAny = false;
-  for (const account of loadConfig().accounts) {
-    const synced = listSyncedEmails(account.syncPath);
+  for (const account of config.accounts) {
+    const synced = listSyncedFiles(account.syncPath);
     if (synced.length === 0) {
       console.warn(`${account.username}: no synced emails found — skipping`);
       continue;
     }
     compactedAny = true;
     console.log(`compacting ${synced.length} emails from ${account.username} to <= ${TARGET_TOKENS} tokens with ${MODEL}`);
-    // Each email is prefixed with its citation key so the model can attribute
-    // every digest fact to its source file (see COMPACT_SYSTEM_PROMPT).
+    // Each email is prefixed with its filename (minus the extension) as a
+    // citation key, so the model can attribute every digest fact to its source
+    // file (see COMPACT_SYSTEM_PROMPT).
     const emails = synced.map(
-      (email) =>
-        `\n<!-- source: ${email.citationKey} -->\n${stripInlineAttachments(readSyncedEmail(email))}`,
+      (file) =>
+        `\n<!-- source: ${basename(file.name, '.md')} -->\n` +
+        stripInlineAttachments(readFileSync(file.path, 'utf8')),
     );
     const outputDir = join(account.syncPath, 'compacted');
     const digest = await compact(emails, TARGET_TOKENS, outputDir);
@@ -222,13 +227,5 @@ export async function main(): Promise<void> {
     writeFileSync(finalPath, digest);
     console.log(`${account.username}: final digest written to ${finalPath}`);
   }
-  if (!compactedAny) {
-    console.error('no synced emails found for any account — run `npm start` first');
-    process.exitCode = 1;
-  }
+  return compactedAny;
 }
-
-main().catch((err: unknown) => {
-  console.error(err instanceof Error ? err.message : err);
-  process.exitCode = 1;
-});

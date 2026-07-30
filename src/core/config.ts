@@ -8,6 +8,7 @@ import { mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } 
 import { homedir } from 'os';
 import { dirname, join } from 'path';
 import { dim } from './ansi.js';
+import type { Transport } from './mail-source.js';
 
 export const CONFIG_VERSION = 2;
 
@@ -25,6 +26,11 @@ interface AccountBase {
   tls: boolean;      // imapflow `secure` (implicit TLS)
   username: string;
   syncPath: string;  // absolute; '~' is expanded at save time
+  // How the account reaches its mail. Absent means "derive it" (see
+  // integration/open.ts), which is why adding this needed no version bump:
+  // configs written before it exist load unchanged, and an older build that
+  // does not understand the field simply ignores it and uses IMAP.
+  transport?: Transport;
 }
 
 export interface OAuthCredentials {
@@ -83,7 +89,8 @@ function hasAccountBaseFields(a: Record<string, unknown>): boolean {
     typeof a.port === 'number' &&
     typeof a.tls === 'boolean' &&
     typeof a.username === 'string' &&
-    typeof a.syncPath === 'string'
+    typeof a.syncPath === 'string' &&
+    (a.transport === undefined || a.transport === 'imap' || a.transport === 'gmail')
   );
 }
 

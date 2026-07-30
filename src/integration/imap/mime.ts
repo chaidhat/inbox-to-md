@@ -5,6 +5,7 @@
 // structure metadata alone.
 
 import type { MessageStructureObject } from 'imapflow';
+import type { AttachmentInfo } from '../../core/markdown.js';
 
 // The one body part worth downloading: the first non-attachment text/plain
 // part, falling back to text/html.
@@ -13,12 +14,6 @@ export interface TextPartRef {
   encoding: string;  // content-transfer-encoding, lowercased
   charset: string;
   isHtml: boolean;
-}
-
-export interface AttachmentInfo {
-  name: string;
-  size: number;
-  contentType: string;
 }
 
 function leafNodes(root: MessageStructureObject): MessageStructureObject[] {

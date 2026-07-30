@@ -14,10 +14,10 @@
 import { createRequire } from 'module';
 
 const COMMANDS: Record<string, string> = {
-  sync: './index.js',
-  auth: './auth.js',
-  compact: './compact.js',
-  archive: './archive.js',
+  sync: './commands/sync.js',
+  auth: './commands/auth.js',
+  compact: './commands/compact.js',
+  archive: './commands/archive.js',
 };
 
 const USAGE = `Usage: inbox-to-md <command>
