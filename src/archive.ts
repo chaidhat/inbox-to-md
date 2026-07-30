@@ -9,9 +9,9 @@ import { readdirSync, rmSync, statSync } from 'fs';
 import { join, resolve } from 'path';
 import type { ImapFlow } from 'imapflow';
 import { bold, dim, green, red } from './ansi.js';
-import type { Config, ImapAccount } from './config.js';
+import type { Account, Config } from './config.js';
 import { loadConfig } from './config.js';
-import { closeImapClient, createImapClient, describeImapError } from './imap.js';
+import { closeImapClient, connectImap, describeImapError } from './imap.js';
 import { extractFrontmatterValue, extractMessageId, readFrontmatterHead } from './markdown.js';
 
 const USAGE = 'Usage: inbox-to-md archive <md dir>';
@@ -73,7 +73,7 @@ async function findArchiveMailbox(client: ImapFlow): Promise<string | null> {
 // Tries to archive each pending target on this account. A message-id that
 // isn't found here is left for the other accounts (or reported as not found
 // at the end) — searching the wrong account just returns nothing.
-async function archiveOnAccount(account: ImapAccount, targets: ArchiveTarget[], counts: ArchiveCounts): Promise<void> {
+async function archiveOnAccount(account: Account, targets: ArchiveTarget[], counts: ArchiveCounts): Promise<void> {
   const pending = targets.filter((t) => !t.archived);
   if (pending.length === 0) return;
 
@@ -85,8 +85,7 @@ async function archiveOnAccount(account: ImapAccount, targets: ArchiveTarget[], 
     else byMailbox.set(t.mailbox, [t]);
   }
 
-  const client = createImapClient(account);
-  await client.connect();
+  const client = await connectImap(account);
   try {
     const archiveBox = await findArchiveMailbox(client);
     if (archiveBox === null) {
@@ -135,7 +134,7 @@ async function archiveOnAccount(account: ImapAccount, targets: ArchiveTarget[], 
 // every file was archived cleanly.
 export async function runArchive(config: Config, dir: string): Promise<boolean> {
   if (config.accounts.length === 0) {
-    console.error('No accounts configured. Run `npm run auth` to add one.');
+    console.error('No accounts configured. Run `inbox-to-md auth add` to add one.');
     return false;
   }
 
@@ -152,7 +151,7 @@ export async function runArchive(config: Config, dir: string): Promise<boolean> 
       await archiveOnAccount(account, targets, counts);
     } catch (err) {
       allOk = false;
-      console.error(`${bold(account.label)}: ${red(`FAILED — ${describeImapError(err, account.host, account.port)}`)}`);
+      console.error(`${bold(account.label)}: ${red(`FAILED — ${describeImapError(err, account)}`)}`);
     }
   }
 

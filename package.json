@@ -1,7 +1,7 @@
 {
   "name": "inbox-to-md",
   "version": "0.1.1",
-  "description": "Sync IMAP inboxes to Markdown files — one file per email, with YAML frontmatter",
+  "description": "Sync IMAP inboxes (OAuth or password) to Markdown files — one file per email, with YAML frontmatter",
   "type": "module",
   "bin": {
     "inbox-to-md": "dist/cli.js"
@@ -14,6 +14,8 @@
   },
   "keywords": [
     "imap",
+    "oauth",
+    "gmail",
     "email",
     "markdown",
     "inbox",
@@ -32,7 +34,6 @@
     "build": "tsc",
     "prepublishOnly": "npm run build",
     "auth": "tsx src/auth.ts",
-    "authcli": "tsx src/authcli.ts",
     "dev": "tsx src/index.ts",
     "start": "tsx src/index.ts",
     "archive": "tsx src/archive.ts",

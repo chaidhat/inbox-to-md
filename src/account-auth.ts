@@ -1,85 +1,101 @@
-// Shared account parsing and IMAP verification for both authentication
-// surfaces. Keep policy here so the interactive TUI and non-interactive CLI
-// cannot disagree about what constitutes a valid, working account.
+// Shared account parsing and IMAP verification for the auth CLI. Keeping the
+// policy here — what a valid account looks like, and what "working" means —
+// means adding an auth method does not scatter validation across commands.
+//
+// Parsing is split from credential handling on purpose: the OAuth flow sends
+// the user to a browser, and it would be rude to do that only to reject a
+// malformed sync path afterwards.
 
 import { mkdirSync } from 'fs';
 import { isAbsolute } from 'path';
-import { expandTilde, type ImapAccount } from './config.js';
-import { closeImapClient, createImapClient, describeImapError } from './imap.js';
+import { expandTilde, type AccountDraft, type OAuthCredentials } from './config.js';
+import { closeImapClient, connectImap, describeImapError } from './imap.js';
 
-export type AccountWithoutId = Omit<ImapAccount, 'id'>;
-
-export interface AccountValues {
+// The connection fields, as strings, exactly as they arrive from CLI flags.
+export interface AccountFieldValues {
   label: string;
   host: string;
   port: string;
   tls: string;
   username: string;
-  password: string;
   syncPath: string;
 }
+
+export interface ParsedFields {
+  label: string;
+  host: string;
+  port: number;
+  tls: boolean;
+  username: string;
+  syncPath: string;
+}
+
+// How the account will authenticate, already resolved: a password from the
+// user, or credentials returned by a completed OAuth consent flow.
+export type CredentialInput =
+  | { auth: 'password'; password: string }
+  | { auth: 'oauth'; oauth: OAuthCredentials };
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-export function parseAccountValues(values: AccountValues): AccountWithoutId {
-  const label = values.label.trim();
+export function parseFields(fields: AccountFieldValues): ParsedFields {
+  const label = fields.label.trim();
   if (label === '') throw new Error('Label is required');
 
-  const host = values.host.trim();
+  const host = fields.host.trim();
   if (host === '') throw new Error('IMAP host is required');
 
-  if (!/^\d+$/.test(values.port)) throw new Error('Port must be between 1 and 65535');
-  const port = Number(values.port);
+  if (!/^\d+$/.test(fields.port)) throw new Error('Port must be between 1 and 65535');
+  const port = Number(fields.port);
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error('Port must be between 1 and 65535');
   }
 
-  if (values.tls !== 'yes' && values.tls !== 'no') {
+  if (fields.tls !== 'yes' && fields.tls !== 'no') {
     throw new Error('TLS must be "yes" or "no"');
   }
 
-  const username = values.username.trim();
+  const username = fields.username.trim();
   if (username === '') throw new Error('Username is required');
-  if (values.password === '') throw new Error('Password is required');
 
-  const syncPath = expandTilde(values.syncPath.trim());
+  const syncPath = expandTilde(fields.syncPath.trim());
   if (syncPath === '') throw new Error('Sync path is required');
   if (!isAbsolute(syncPath)) throw new Error('Sync path must be absolute (or start with ~)');
 
-  return {
-    label,
-    host,
-    port,
-    tls: values.tls === 'yes',
-    username,
-    password: values.password,
-    syncPath,
-  };
+  return { label, host, port, tls: fields.tls === 'yes', username, syncPath };
 }
 
-// Verify before saving. Directory creation remains part of verification so a
-// bad destination fails immediately rather than during a later sync.
-export async function verifyAccount(account: AccountWithoutId): Promise<void> {
-  try {
-    mkdirSync(account.syncPath, { recursive: true });
-  } catch (err) {
-    throw new Error(`Cannot create ${account.syncPath}: ${errorMessage(err)}`);
+export function buildAccount(fields: ParsedFields, credential: CredentialInput): AccountDraft {
+  if (credential.auth === 'password') {
+    if (credential.password === '') throw new Error('Password is required');
+    return { ...fields, auth: 'password', password: credential.password };
   }
+  if (credential.oauth.refreshToken === '') throw new Error('OAuth authorization returned no refresh token');
+  return { ...fields, auth: 'oauth', oauth: credential.oauth };
+}
 
-  const client = createImapClient(account);
+// Creating the destination is part of setup, not of sync: a path that cannot be
+// created must fail while the user is still looking at the auth command.
+export function ensureSyncDir(syncPath: string): void {
   try {
-    await client.connect();
+    mkdirSync(syncPath, { recursive: true });
   } catch (err) {
-    client.close();
-    throw new Error(describeImapError(err, account.host, account.port));
+    throw new Error(`Cannot create ${syncPath}: ${errorMessage(err)}`);
+  }
+}
+
+// Verify before saving: a real login proves host, port, TLS mode, and the
+// credential in one shot.
+export async function verifyAccount(account: AccountDraft): Promise<void> {
+  ensureSyncDir(account.syncPath);
+
+  let client;
+  try {
+    client = await connectImap(account);
+  } catch (err) {
+    throw new Error(describeImapError(err, account));
   }
   await closeImapClient(client);
-}
-
-export async function parseAndVerifyAccount(values: AccountValues): Promise<AccountWithoutId> {
-  const account = parseAccountValues(values);
-  await verifyAccount(account);
-  return account;
 }

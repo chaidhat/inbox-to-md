@@ -12,8 +12,8 @@ import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync }
 import { join } from 'path';
 import type { ImapFlow, MessageEnvelopeObject } from 'imapflow';
 import { bold, dim, green, red } from './ansi.js';
-import type { Config, ImapAccount } from './config.js';
-import { closeImapClient, createImapClient, describeImapError } from './imap.js';
+import type { Account, Config } from './config.js';
+import { closeImapClient, connectImap, describeImapError } from './imap.js';
 import { buildFilename, extractFrontmatterValue, extractMessageId, fallbackHash, readFrontmatterHead, renderEmail, type EmailContent } from './markdown.js';
 import { collectAttachments, decodeTextPart, findTextPart } from './mime.js';
 
@@ -270,7 +270,7 @@ async function syncMailbox(
   }
 }
 
-async function syncAccount(account: ImapAccount, since: Date, forceRewrite: boolean): Promise<SyncCounts> {
+async function syncAccount(account: Account, since: Date, forceRewrite: boolean): Promise<SyncCounts> {
   const counts: SyncCounts = { written: 0, skipped: 0, deleted: 0, errors: 0 };
   const dir = account.syncPath;
   mkdirSync(dir, { recursive: true });
@@ -284,8 +284,7 @@ async function syncAccount(account: ImapAccount, since: Date, forceRewrite: bool
   // already synced — the ground truth pruning compares against.
   const serverIds = new Set<string>();
 
-  const client = createImapClient(account);
-  await client.connect();
+  const client = await connectImap(account);
   try {
     const mailboxes = ['INBOX'];
     const sent = await findSentMailbox(client);
@@ -308,7 +307,7 @@ async function syncAccount(account: ImapAccount, since: Date, forceRewrite: bool
 // the rest still run. Returns true only when everything was fully clean.
 export async function runSync(config: Config, since: Date = computeSinceDate(), forceRewrite = false): Promise<boolean> {
   if (config.accounts.length === 0) {
-    console.error('No accounts configured. Run `npm run auth` to add one.');
+    console.error('No accounts configured. Run `inbox-to-md auth add` to add one.');
     return false;
   }
 
@@ -328,7 +327,7 @@ export async function runSync(config: Config, since: Date = computeSinceDate(), 
       if (counts.errors > 0) allOk = false;
     } catch (err) {
       allOk = false;
-      console.error(`${bold(account.label)}: ${red(`FAILED — ${describeImapError(err, account.host, account.port)}`)}`);
+      console.error(`${bold(account.label)}: ${red(`FAILED — ${describeImapError(err, account)}`)}`);
     }
   }
   console.log(dim(`Total: ${totals.written} new · ${totals.skipped} skipped · ${totals.deleted} deleted · ${totals.errors} errors`));

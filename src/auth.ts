@@ -1,132 +1,410 @@
-// `npm run auth` — interactive account management. A menu loop lists the
-// configured accounts; Enter edits (or adds), Ctrl+X deletes with a
-// confirmation, Esc quits. The add/edit form verifies by actually logging in
-// over IMAP before anything is saved.
+// `inbox-to-md auth <action>` — account management for agents, scripts, and
+// people. Inputs are strict flags, successful results are JSON on stdout, and
+// failures are JSON on stderr with a nonzero exit status. There is no
+// interactive mode: the only step that ever needs a human is the Google
+// consent screen, and its URL is printed to stderr so stdout stays pure JSON.
+//
+// Secrets (passwords, refresh tokens, access tokens) are accepted but never
+// included in output.
 
 import { randomUUID } from 'crypto';
-import { dim, red } from './ansi.js';
-import { parseAccountValues, parseAndVerifyAccount, type AccountValues } from './account-auth.js';
-import { CONFIG_PATH, loadConfig, saveConfig, type Config, type ImapAccount } from './config.js';
-import { enterTui, exitTui, pickFromMenu, runForm, type FormField, type MenuOption } from './tui.js';
+import { readFileSync } from 'fs';
+import {
+  buildAccount,
+  ensureSyncDir,
+  parseFields,
+  verifyAccount,
+  type AccountFieldValues,
+  type CredentialInput,
+  type ParsedFields,
+} from './account-auth.js';
+import {
+  CONFIG_PATH,
+  expandTilde,
+  loadConfig,
+  saveConfig,
+  type Account,
+  type AuthMethod,
+  type Config,
+  type OAuthAccount,
+} from './config.js';
+import {
+  authorize,
+  DEFAULT_AUTHORIZE_TIMEOUT_MS,
+  GMAIL_IMAP,
+  parseClientSecretFile,
+  type OAuthClient,
+} from './oauth.js';
 
-const MENU_FOOTER = '[↑/↓] select · [enter] edit/add · [ctrl+x] delete · [esc] quit';
-const FORM_FOOTER = '[↑/↓] move · [enter] verify & save · [esc] back without saving';
+type Action = 'list' | 'add' | 'edit' | 'delete' | 'reauth';
+const ACTIONS: Action[] = ['list', 'add', 'edit', 'delete', 'reauth'];
 
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
+type ValueFlag =
+  | 'auth' | 'id' | 'label' | 'host' | 'port' | 'tls' | 'username' | 'password' | 'sync-path'
+  | 'client-id' | 'client-secret' | 'client-secret-file' | 'timeout';
+type BooleanFlag = 'password-stdin' | 'no-browser';
+
+const VALUE_FLAGS = new Set<ValueFlag>([
+  'auth', 'id', 'label', 'host', 'port', 'tls', 'username', 'password', 'sync-path',
+  'client-id', 'client-secret', 'client-secret-file', 'timeout',
+]);
+const BOOLEAN_FLAGS = new Set<BooleanFlag>(['password-stdin', 'no-browser']);
+
+interface Flags {
+  value: Partial<Record<ValueFlag, string>>;
+  bool: Set<BooleanFlag>;
 }
 
-// Verifies form values: local validation first (cheap, specific messages),
-// then a real IMAP login — imapflow authenticates during connect(), so
-// success proves host, port, TLS mode, and credentials in one shot.
-// Returns null on success or the error string to show in red.
-async function verifyAccount(values: Record<string, string>): Promise<string | null> {
-  try {
-    await parseAndVerifyAccount(values as unknown as AccountValues);
-    return null;
-  } catch (err) {
-    return errorMessage(err);
-  }
+// Flags each action accepts. `add` narrows further once --auth is known, so
+// password flags cannot leak into an OAuth account or vice versa.
+const COMMON_FIELD_FLAGS: ValueFlag[] = ['label', 'host', 'port', 'tls', 'username', 'sync-path'];
+const OAUTH_CLIENT_FLAGS: ValueFlag[] = ['client-id', 'client-secret', 'client-secret-file', 'timeout'];
+
+const USAGE = `Usage: inbox-to-md auth <action> [options]
+
+Actions:
+  list
+  add     --auth password --label <label> --host <host> [--port <port>] [--tls yes|no]
+          --username <username> (--password <password> | --password-stdin)
+          --sync-path <path>
+  add     --auth oauth --label <label> --username <email> --sync-path <path>
+          (--client-secret-file <client_secret.json> | --client-id <id> --client-secret <secret>)
+          [--host ${GMAIL_IMAP.host}] [--port ${GMAIL_IMAP.port}] [--tls yes|no]
+          [--no-browser] [--timeout <seconds>]
+  edit    --id <id> [--label <label>] [--host <host>] [--port <port>] [--tls yes|no]
+          [--username <username>] [--password <password> | --password-stdin]
+          [--sync-path <path>]
+  reauth  --id <id> [--client-secret-file <client_secret.json>]
+          [--client-id <id> --client-secret <secret>] [--no-browser] [--timeout <seconds>]
+  delete  --id <id>
+
+Options:
+  --auth password|oauth   how the account authenticates (required for add)
+  --password-stdin        read the password from stdin without prompting
+  --no-browser            print the authorization URL instead of opening a browser
+  --timeout <seconds>     how long to wait for the authorization redirect (default ${DEFAULT_AUTHORIZE_TIMEOUT_MS / 1000})
+  -h, --help              show this help
+
+Results are JSON on stdout. Errors are JSON on stderr. Passwords and OAuth tokens
+are never output. Prefer --password-stdin because --password may be visible in
+process listings and shell history.
+
+OAuth requires your own Google Cloud OAuth client with the https://mail.google.com/
+scope — see the README section "OAuth (Google)". \`reauth\` re-runs the consent flow
+for an existing account, reusing its stored client unless a new one is given.`;
+
+interface PublicAccount {
+  id: string;
+  label: string;
+  host: string;
+  port: number;
+  tls: boolean;
+  username: string;
+  syncPath: string;
+  auth: AuthMethod;
+  clientId?: string; // OAuth accounts only; a client id is not a secret
 }
 
-function accountFields(existing: ImapAccount | null): FormField[] {
-  return [
-    { key: 'label', label: 'Label', kind: 'text', value: existing?.label ?? '' },
-    { key: 'host', label: 'IMAP host', kind: 'text', value: existing?.host ?? '', hint: 'e.g. imap.gmail.com' },
-    { key: 'port', label: 'Port', kind: 'number', value: String(existing?.port ?? 993) },
-    { key: 'tls', label: 'TLS', kind: 'select', value: existing ? (existing.tls ? 'yes' : 'no') : 'yes', options: ['yes', 'no'] },
-    { key: 'username', label: 'Username', kind: 'text', value: existing?.username ?? '' },
-    { key: 'password', label: 'Password', kind: 'secret', value: existing?.password ?? '' },
-    { key: 'syncPath', label: 'Sync path', kind: 'text', value: existing?.syncPath ?? '', hint: '~ is expanded; the directory is created if missing' },
-  ];
-}
-
-// Runs the add/edit form; on verified submit, upserts the account and saves
-// to disk immediately so a later crash can't lose it.
-async function editAccount(config: Config, index: number | null): Promise<void> {
-  const existing = index === null ? null : config.accounts[index];
-  const result = await runForm({
-    title: existing ? `Edit account: ${existing.label}` : 'Add account',
-    hint: FORM_FOOTER,
-    fields: accountFields(existing),
-    submitLabel: '',
-    verify: verifyAccount,
-  });
-  if (result === 'back') return;
-
-  const account: ImapAccount = {
-    id: existing?.id ?? randomUUID(),
-    ...parseAccountValues(result as unknown as AccountValues),
+// Built field by field rather than by stripping a copy, so a future credential
+// field cannot accidentally end up in output.
+function publicAccount(account: Account): PublicAccount {
+  const safe: PublicAccount = {
+    id: account.id,
+    label: account.label,
+    host: account.host,
+    port: account.port,
+    tls: account.tls,
+    username: account.username,
+    syncPath: account.syncPath,
+    auth: account.auth,
   };
+  if (account.auth === 'oauth') safe.clientId = account.oauth.clientId;
+  return safe;
+}
+
+function output(value: unknown): void {
+  process.stdout.write(JSON.stringify(value) + '\n');
+}
+
+class HandledError extends Error {}
+
+function fail(message: string): never {
+  process.stderr.write(JSON.stringify({ ok: false, error: message }) + '\n');
+  process.exitCode = 1;
+  throw new HandledError();
+}
+
+function parseArgs(argv: string[]): { action: Action; flags: Flags } | { help: true } {
+  if (argv.length === 0 || argv[0] === '-h' || argv[0] === '--help') return { help: true };
+
+  const action = argv[0];
+  if (!ACTIONS.includes(action as Action)) {
+    fail(`Unknown action "${action}". Expected ${ACTIONS.join(', ')}.`);
+  }
+
+  const flags: Flags = { value: {}, bool: new Set() };
+  for (let i = 1; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === '-h' || arg === '--help') return { help: true };
+    if (!arg.startsWith('--')) fail(`Unexpected argument "${arg}".`);
+
+    const equals = arg.indexOf('=');
+    const name = arg.slice(2, equals === -1 ? undefined : equals);
+
+    if (BOOLEAN_FLAGS.has(name as BooleanFlag)) {
+      if (equals !== -1) fail(`--${name} does not take a value.`);
+      if (flags.bool.has(name as BooleanFlag)) fail(`Duplicate flag "--${name}".`);
+      flags.bool.add(name as BooleanFlag);
+      continue;
+    }
+    if (!VALUE_FLAGS.has(name as ValueFlag)) fail(`Unknown flag "--${name}".`);
+    if (flags.value[name as ValueFlag] !== undefined) fail(`Duplicate flag "--${name}".`);
+
+    const value = equals === -1 ? argv[++i] : arg.slice(equals + 1);
+    if (value === undefined) fail(`--${name} requires a value.`);
+    flags.value[name as ValueFlag] = value;
+  }
+
+  if (flags.value.password !== undefined && flags.bool.has('password-stdin')) {
+    fail('Use only one of --password or --password-stdin.');
+  }
+  return { action: action as Action, flags };
+}
+
+// Rejects anything the action (or, for `add`, the chosen auth method) does not
+// accept, so a misplaced flag is an error rather than a silent no-op.
+function rejectFlags(context: string, flags: Flags, allowedValues: ValueFlag[], allowedBooleans: BooleanFlag[]): void {
+  const allowedValueSet = new Set(allowedValues);
+  const unexpectedValue = [...VALUE_FLAGS].find((name) => flags.value[name] !== undefined && !allowedValueSet.has(name));
+  if (unexpectedValue !== undefined) fail(`${context} does not accept --${unexpectedValue}.`);
+
+  const allowedBooleanSet = new Set(allowedBooleans);
+  const unexpectedBoolean = [...flags.bool].find((name) => !allowedBooleanSet.has(name));
+  if (unexpectedBoolean !== undefined) fail(`${context} does not accept --${unexpectedBoolean}.`);
+}
+
+function required(flags: Flags, name: ValueFlag): string {
+  const value = flags.value[name];
+  if (value === undefined) fail(`--${name} is required.`);
+  return value;
+}
+
+function requireAuthMethod(flags: Flags): AuthMethod {
+  const value = required(flags, 'auth');
+  if (value !== 'password' && value !== 'oauth') {
+    fail(`--auth must be "password" or "oauth" (got "${value}").`);
+  }
+  return value;
+}
+
+function readPassword(flags: Flags, requiredForAction: boolean): string | undefined {
+  const literal = flags.value.password;
+  if (literal !== undefined) return literal;
+  if (!flags.bool.has('password-stdin')) {
+    if (requiredForAction) fail('Use --password or --password-stdin.');
+    return undefined;
+  }
+  if (process.stdin.isTTY) fail('--password-stdin requires piped input; it never prompts.');
+  return readFileSync(0, 'utf8').replace(/\r?\n$/, '');
+}
+
+function parseTimeoutMs(flags: Flags): number {
+  const value = flags.value.timeout;
+  if (value === undefined) return DEFAULT_AUTHORIZE_TIMEOUT_MS;
+  if (!/^\d+$/.test(value) || Number(value) < 1 || Number(value) > 3600) {
+    fail('--timeout must be a whole number of seconds between 1 and 3600.');
+  }
+  return Number(value) * 1000;
+}
+
+// Resolves the Google OAuth client to authorize against. `fallback` is the
+// client already stored on the account (reauth), used when no client flags are
+// given.
+function resolveOAuthClient(flags: Flags, fallback: OAuthClient | null): OAuthClient {
+  const file = flags.value['client-secret-file'];
+  const clientId = flags.value['client-id'];
+  const clientSecret = flags.value['client-secret'];
+
+  if (file !== undefined) {
+    if (clientId !== undefined || clientSecret !== undefined) {
+      fail('Use either --client-secret-file or --client-id with --client-secret, not both.');
+    }
+    return parseClientSecretFile(expandTilde(file));
+  }
+  if (clientId !== undefined && clientSecret !== undefined) {
+    if (clientId === '' || clientSecret === '') fail('--client-id and --client-secret cannot be empty.');
+    return { clientId, clientSecret };
+  }
+  if (clientId !== undefined || clientSecret !== undefined) {
+    fail('--client-id and --client-secret must be given together.');
+  }
+  if (fallback !== null) return fallback;
+  fail(
+    'OAuth needs your own Google Cloud OAuth client: pass --client-secret-file <client_secret.json>, ' +
+    'or --client-id and --client-secret. See the README section "OAuth (Google)".',
+  );
+}
+
+// Runs the consent flow for `fields`, which have already been validated so the
+// user is never sent to a browser for an account that cannot be saved.
+async function authorizeOAuth(flags: Flags, fields: ParsedFields, client: OAuthClient): Promise<CredentialInput> {
+  ensureSyncDir(fields.syncPath);
+  const oauth = await authorize({
+    client,
+    loginHint: fields.username,
+    openBrowser: !flags.bool.has('no-browser'),
+    timeoutMs: parseTimeoutMs(flags),
+  });
+  return { auth: 'oauth', oauth };
+}
+
+function findAccount(config: Config, id: string): { account: Account; index: number } {
+  const index = config.accounts.findIndex((account) => account.id === id);
+  if (index === -1) fail(`No account found with id "${id}".`);
+  return { account: config.accounts[index], index };
+}
+
+function commit(config: Config, index: number | null, account: Account, action: string): void {
   if (index === null) config.accounts.push(account);
   else config.accounts[index] = account;
   saveConfig(config);
+  output({ ok: true, action, account: publicAccount(account), configPath: CONFIG_PATH });
 }
 
-async function confirmDelete(config: Config, index: number): Promise<void> {
-  const account = config.accounts[index];
-  const result = await pickFromMenu(
-    `Delete "${account.label}"? Synced markdown files are not deleted.`,
-    [
-      { label: 'Cancel', value: 'cancel' }, // default row: a reflexive double-Enter is safe
-      { label: 'Delete', value: 'delete' },
-    ],
-    '[↑/↓] select · [enter] confirm · [esc] cancel',
-  );
-  if (result.kind === 'pick' && result.value === 'delete') {
-    config.accounts.splice(index, 1);
-    saveConfig(config);
+async function add(config: Config, flags: Flags): Promise<void> {
+  const method = requireAuthMethod(flags);
+
+  if (method === 'password') {
+    rejectFlags('add --auth password', flags, ['auth', ...COMMON_FIELD_FLAGS, 'password'], ['password-stdin']);
+    const fields = parseFields({
+      label: required(flags, 'label'),
+      host: required(flags, 'host'),
+      port: flags.value.port ?? '993',
+      tls: flags.value.tls ?? 'yes',
+      username: required(flags, 'username'),
+      syncPath: required(flags, 'sync-path'),
+    });
+    const credential: CredentialInput = { auth: 'password', password: readPassword(flags, true)! };
+    const draft = buildAccount(fields, credential);
+    await verifyAccount(draft);
+    commit(config, null, { id: randomUUID(), ...draft }, 'added');
+    return;
   }
+
+  rejectFlags('add --auth oauth', flags, ['auth', ...COMMON_FIELD_FLAGS, ...OAUTH_CLIENT_FLAGS], ['no-browser']);
+  const client = resolveOAuthClient(flags, null);
+  // Gmail's IMAP endpoint is the default because a Google OAuth token is only
+  // useful there; --host stays available for Workspace setups that differ.
+  const fields = parseFields({
+    label: required(flags, 'label'),
+    host: flags.value.host ?? GMAIL_IMAP.host,
+    port: flags.value.port ?? String(GMAIL_IMAP.port),
+    tls: flags.value.tls ?? (GMAIL_IMAP.tls ? 'yes' : 'no'),
+    username: required(flags, 'username'),
+    syncPath: required(flags, 'sync-path'),
+  });
+  const draft = buildAccount(fields, await authorizeOAuth(flags, fields, client));
+  await verifyAccount(draft);
+  commit(config, null, { id: randomUUID(), ...draft }, 'added');
 }
 
-async function menuLoop(config: Config): Promise<void> {
-  while (true) {
-    const options: MenuOption[] = [
-      ...config.accounts.map((a, i) => ({
-        label: `${a.label} (${a.username} @ ${a.host})`,
-        value: `account:${i}`,
-      })),
-      { label: 'Add account', value: 'add' },
-      { label: 'Quit', value: 'quit' },
-    ];
-    const result = await pickFromMenu('Accounts:', options, MENU_FOOTER, { enableCtrlX: true });
-    if (result.kind === 'escape') return;
-    const accountIndex = result.value.startsWith('account:')
-      ? parseInt(result.value.slice('account:'.length), 10)
-      : null;
-    if (result.kind === 'ctrl-x') {
-      if (accountIndex !== null) await confirmDelete(config, accountIndex);
-      continue;
+async function edit(config: Config, flags: Flags): Promise<void> {
+  rejectFlags('edit', flags, ['id', ...COMMON_FIELD_FLAGS, 'password'], ['password-stdin']);
+  const { account: existing, index } = findAccount(config, required(flags, 'id'));
+
+  const fields = parseFields({
+    label: flags.value.label ?? existing.label,
+    host: flags.value.host ?? existing.host,
+    port: flags.value.port ?? String(existing.port),
+    tls: flags.value.tls ?? (existing.tls ? 'yes' : 'no'),
+    username: flags.value.username ?? existing.username,
+    syncPath: flags.value['sync-path'] ?? existing.syncPath,
+  });
+
+  let credential: CredentialInput;
+  if (existing.auth === 'password') {
+    const password = readPassword(flags, false);
+    credential = { auth: 'password', password: password ?? existing.password };
+  } else {
+    if (flags.value.password !== undefined || flags.bool.has('password-stdin')) {
+      fail(`Account "${existing.id}" authenticates with OAuth — run \`inbox-to-md auth reauth --id ${existing.id}\` instead of setting a password.`);
     }
-    if (result.value === 'quit') return;
-    if (result.value === 'add') {
-      await editAccount(config, null);
-      continue;
-    }
-    if (accountIndex !== null) await editAccount(config, accountIndex);
+    credential = { auth: 'oauth', oauth: existing.oauth };
   }
+
+  const draft = buildAccount(fields, credential);
+  await verifyAccount(draft);
+  commit(config, index, { id: existing.id, ...draft }, 'edited');
+}
+
+// Re-runs the consent flow for an existing OAuth account, keeping its
+// connection settings. The old refresh token is only replaced once the new
+// grant has been verified over IMAP.
+async function reauth(config: Config, flags: Flags): Promise<void> {
+  rejectFlags('reauth', flags, ['id', ...OAUTH_CLIENT_FLAGS], ['no-browser']);
+  const { account: existing, index } = findAccount(config, required(flags, 'id'));
+  if (existing.auth !== 'oauth') {
+    fail(`Account "${existing.id}" authenticates with a password — use \`inbox-to-md auth edit --id ${existing.id} --password-stdin\`.`);
+  }
+  const oauthAccount: OAuthAccount = existing;
+  const client = resolveOAuthClient(flags, {
+    clientId: oauthAccount.oauth.clientId,
+    clientSecret: oauthAccount.oauth.clientSecret,
+  });
+  const fields = parseFields({
+    label: oauthAccount.label,
+    host: oauthAccount.host,
+    port: String(oauthAccount.port),
+    tls: oauthAccount.tls ? 'yes' : 'no',
+    username: oauthAccount.username,
+    syncPath: oauthAccount.syncPath,
+  });
+  const draft = buildAccount(fields, await authorizeOAuth(flags, fields, client));
+  await verifyAccount(draft);
+  commit(config, index, { id: oauthAccount.id, ...draft }, 'reauthorized');
+}
+
+function remove(config: Config, flags: Flags): void {
+  rejectFlags('delete', flags, ['id'], []);
+  const { account, index } = findAccount(config, required(flags, 'id'));
+  config.accounts.splice(index, 1);
+  saveConfig(config);
+  output({ ok: true, action: 'deleted', account: publicAccount(account), configPath: CONFIG_PATH });
 }
 
 async function main(): Promise<void> {
-  if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    console.error('`npm run auth` needs an interactive terminal.');
-    process.exitCode = 1;
+  const parsed = parseArgs(process.argv.slice(2));
+  if ('help' in parsed) {
+    console.log(USAGE);
     return;
   }
-  const config = loadConfig(); // before enterTui so a parse error prints normally
-  enterTui();
-  try {
-    await menuLoop(config);
-  } finally {
-    exitTui();
+
+  const { action, flags } = parsed;
+  const config = loadConfig();
+  if (action === 'list') {
+    rejectFlags('list', flags, [], []);
+    output({
+      ok: true,
+      action: 'listed',
+      accounts: config.accounts.map(publicAccount),
+      configPath: CONFIG_PATH,
+    });
+  } else if (action === 'add') {
+    await add(config, flags);
+  } else if (action === 'edit') {
+    await edit(config, flags);
+  } else if (action === 'reauth') {
+    await reauth(config, flags);
+  } else {
+    remove(config, flags);
   }
-  const n = config.accounts.length;
-  console.log(`${n} account${n === 1 ? '' : 's'} configured.`);
-  console.log(dim(`Config: ${CONFIG_PATH}`));
-  console.log(dim('Run `npm start` to sync.'));
 }
 
 main().catch((err) => {
-  console.error(red(errorMessage(err)));
+  if (err instanceof HandledError) return;
+  process.stderr.write(JSON.stringify({
+    ok: false,
+    error: err instanceof Error ? err.message : String(err),
+  }) + '\n');
   process.exitCode = 1;
 });
