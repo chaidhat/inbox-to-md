@@ -4,7 +4,7 @@
 // overwritten when unparseable — a typo while hand-editing must not destroy
 // stored credentials.
 
-import { mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'fs';
+import { closeSync, mkdirSync, openSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { dirname, join } from 'path';
 import { dim } from './ansi.js';
@@ -74,6 +74,7 @@ export interface Config {
 }
 
 export const CONFIG_PATH = join(homedir(), '.config', 'inbox-to-md', 'config.json');
+const LOCK_PATH = CONFIG_PATH + '.lock';
 
 export function expandTilde(p: string): string {
   if (p === '~') return homedir();
@@ -178,7 +179,10 @@ export function loadConfig(): Config {
 
 export function saveConfig(config: Config): void {
   mkdirSync(dirname(CONFIG_PATH), { recursive: true, mode: 0o700 });
-  const tmp = CONFIG_PATH + '.tmp';
+  // The temp name carries the pid: two processes saving at once must not write
+  // through each other's staging file, which a shared name would let them do —
+  // one would publish the other's bytes and the loser would fail on rename.
+  const tmp = `${CONFIG_PATH}.${process.pid}.tmp`;
   // Remove any stale tmp first: writeFileSync only applies `mode` when it
   // creates the file, so writing over a leftover tmp could keep loose perms.
   rmSync(tmp, { force: true });
@@ -186,4 +190,68 @@ export function saveConfig(config: Config): void {
   // Atomic swap — a crash mid-write must never corrupt the only copy of the
   // stored credentials.
   renameSync(tmp, CONFIG_PATH);
+}
+
+// A crashed process must not lock every later run out of its own config, so a
+// lock this old is assumed abandoned and taken over.
+const LOCK_STALE_MS = 30_000;
+const LOCK_RETRY_MS = 25;
+const LOCK_TIMEOUT_MS = 10_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Serializes read-modify-write against the config across processes. `O_EXCL`
+// creation is the mutual exclusion; the file's own mtime is the staleness
+// clock, so nothing has to be recorded inside it.
+async function withConfigLock<T>(fn: () => T): Promise<T> {
+  mkdirSync(dirname(CONFIG_PATH), { recursive: true, mode: 0o700 });
+  const deadline = Date.now() + LOCK_TIMEOUT_MS;
+
+  let fd: number | null = null;
+  while (fd === null) {
+    try {
+      fd = openSync(LOCK_PATH, 'wx', 0o600);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+      let age: number;
+      try {
+        age = Date.now() - statSync(LOCK_PATH).mtimeMs;
+      } catch {
+        continue; // released between the failed open and the stat — try again
+      }
+      if (age > LOCK_STALE_MS) {
+        rmSync(LOCK_PATH, { force: true });
+        continue;
+      }
+      if (Date.now() > deadline) {
+        throw new Error(
+          `Timed out waiting for the config lock at ${LOCK_PATH}. Another inbox-to-md process is ` +
+          'still writing; retry, or delete that file if no other run is active.',
+        );
+      }
+      await sleep(LOCK_RETRY_MS);
+    }
+  }
+
+  try {
+    return fn();
+  } finally {
+    closeSync(fd);
+    rmSync(LOCK_PATH, { force: true });
+  }
+}
+
+// The only safe way to change stored config. Loading and saving as one locked
+// step is what makes concurrent writers — parallel account syncs each caching a
+// refreshed access token, or a sync running alongside `auth add` — add up
+// instead of overwriting each other with a stale snapshot.
+export async function updateConfig(mutate: (config: Config) => void): Promise<Config> {
+  return await withConfigLock(() => {
+    const config = loadConfig();
+    mutate(config);
+    saveConfig(config);
+    return config;
+  });
 }

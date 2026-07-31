@@ -9,6 +9,7 @@
 
 import { errorMessage } from '../../core/errors.js';
 import type { EmailContent } from '../../core/markdown.js';
+import { mapPool } from '../../core/pool.js';
 import type {
   ArchiveOutcome,
   ArchiveRequest,
@@ -85,6 +86,12 @@ function decodePart(part: GmailPart): string {
 export class GmailMailSource implements MailSource {
   readonly transport: Transport = 'gmail';
 
+  // Each fetch is an independent HTTPS request against a stateless API, so
+  // they parallelize freely — the ceiling is Gmail's per-user rate limit, not
+  // anything here. Eight keeps a sync latency-bound rather than round-trip
+  // bound while staying well inside that quota.
+  readonly maxConcurrentFetches = 8;
+
   private constructor(
     private readonly api: GmailApi,
     private readonly state: GmailState,
@@ -143,24 +150,42 @@ export class GmailMailSource implements MailSource {
       return { refs, complete: false, problems: [`cannot list messages: ${errorMessage(err)}`] };
     }
 
-    let complete = true;
+    // Resolving is one metadata request per id that the index can't answer, so
+    // it runs at the same width as fetching. Dedupe and ordering are decided
+    // afterwards, over results the pool hands back in id order — doing it
+    // inside the pool would make which duplicate wins depend on which request
+    // happened to return first.
+    type Resolved =
+      | { ok: true; ref: MessageRef | null }
+      | { ok: false; problem: string };
+
     let checked = 0;
-    for (const id of ids) {
-      onProgress('all mail', ++checked, ids.length);
+    const resolved = await mapPool<string, Resolved>(ids, this.maxConcurrentFetches, async (id) => {
       try {
-        const ref = await this.resolve(id, since, true);
-        if (ref === null) continue;
-        if (ref.messageId !== '') {
-          if (reported.has(ref.messageId)) continue;
-          reported.add(ref.messageId);
-        }
-        refs.push(ref);
+        return { ok: true, ref: await this.resolve(id, since, true) };
       } catch (err) {
         // One unreadable message must not cost the account the rest, but it
         // does mean this listing is not the whole picture.
-        complete = false;
-        problems.push(`error reading message ${id}: ${errorMessage(err)}`);
+        return { ok: false, problem: `error reading message ${id}: ${errorMessage(err)}` };
+      } finally {
+        onProgress('all mail', ++checked, ids.length);
       }
+    });
+
+    let complete = true;
+    for (const outcome of resolved) {
+      if (!outcome.ok) {
+        complete = false;
+        problems.push(outcome.problem);
+        continue;
+      }
+      const ref = outcome.ref;
+      if (ref === null) continue;
+      if (ref.messageId !== '') {
+        if (reported.has(ref.messageId)) continue;
+        reported.add(ref.messageId);
+      }
+      refs.push(ref);
     }
     return { refs, complete, problems };
   }
@@ -189,11 +214,19 @@ export class GmailMailSource implements MailSource {
     const seen = new Set<string>();
     const unique = [...new Set(addedIds)];
     let checked = 0;
-    for (const id of unique) {
-      onProgress('changes', ++checked, unique.length);
-      // Never trust the cache here: the whole point of a change record is that
-      // this message's labels — and so its mailbox — may have moved.
-      const ref = await this.resolve(id, since, false);
+    // Never trust the cache here: the whole point of a change record is that
+    // this message's labels — and so its mailbox — may have moved. Unlike the
+    // full listing this one lets an error propagate, because an incremental
+    // result with a hole in it would advance the resume point past a message
+    // that was never written.
+    const resolved = await mapPool(unique, this.maxConcurrentFetches, async (id) => {
+      try {
+        return await this.resolve(id, since, false);
+      } finally {
+        onProgress('changes', ++checked, unique.length);
+      }
+    });
+    for (const ref of resolved) {
       if (ref === null) continue;
       if (ref.messageId !== '') {
         if (seen.has(ref.messageId)) continue;

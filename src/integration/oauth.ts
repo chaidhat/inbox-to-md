@@ -18,7 +18,7 @@ import { createHash, randomBytes } from 'crypto';
 import { readFileSync } from 'fs';
 import { createServer, type ServerResponse } from 'http';
 import { dim } from '../core/ansi.js';
-import { loadConfig, saveConfig, type OAuthAccount, type OAuthCredentials } from '../core/config.js';
+import { updateConfig, type OAuthAccount, type OAuthCredentials } from '../core/config.js';
 import { errorMessage } from '../core/errors.js';
 
 export interface OAuthEndpoints {
@@ -386,17 +386,19 @@ export async function authorize(options: AuthorizeOptions): Promise<OAuthCredent
 // `auth add`/`auth reauth` is still verifying a not-yet-saved account.
 export type OAuthAccountRef = Omit<OAuthAccount, 'id'> & { id?: string };
 
-function cacheAccessToken(id: string, minted: MintedAccessToken): void {
+async function cacheAccessToken(id: string, minted: MintedAccessToken): Promise<void> {
   // Best effort: a token we cannot cache only costs one extra refresh next
   // run, so a read-only config or a concurrent edit must not fail a sync — but
-  // it is reported rather than swallowed.
+  // it is reported rather than swallowed. The update is locked because parallel
+  // account syncs reach here at the same time, each holding only its own
+  // account's news.
   try {
-    const config = loadConfig();
-    const account = config.accounts.find((a) => a.id === id);
-    if (account === undefined || account.auth !== 'oauth') return;
-    account.oauth.accessToken = minted.accessToken;
-    account.oauth.accessTokenExpiresAt = minted.expiresAt;
-    saveConfig(config);
+    await updateConfig((config) => {
+      const account = config.accounts.find((a) => a.id === id);
+      if (account === undefined || account.auth !== 'oauth') return;
+      account.oauth.accessToken = minted.accessToken;
+      account.oauth.accessTokenExpiresAt = minted.expiresAt;
+    });
   } catch (err) {
     process.stderr.write(dim(`Warning: could not cache the refreshed access token: ${errorMessage(err)}`) + '\n');
   }
@@ -441,6 +443,6 @@ export async function getAccessToken(
   // Keep the in-memory account current so the rest of this run reuses it.
   credentials.accessToken = minted.accessToken;
   credentials.accessTokenExpiresAt = minted.expiresAt;
-  if (account.id !== undefined) cacheAccessToken(account.id, minted);
+  if (account.id !== undefined) await cacheAccessToken(account.id, minted);
   return minted.accessToken;
 }

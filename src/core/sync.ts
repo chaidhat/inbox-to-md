@@ -11,13 +11,15 @@
 // Nothing here knows a protocol — a MailSource supplies the messages. See
 // core/mail-source.ts.
 
-import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'fs';
+import { closeSync, existsSync, mkdirSync, openSync, renameSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { openMailSource } from '../integration/open.js';
 import { bold, dim, green, red } from './ansi.js';
 import type { Account, Config } from './config.js';
 import { errorMessage } from './errors.js';
 import type { ChangeResult, ListResult, MailSource, MessageRef } from './mail-source.js';
+import { mapPool } from './pool.js';
+import { ProgressGroup, type ProgressBar } from './progress.js';
 import { buildFilename, fallbackHash, listSyncedFiles, readSyncedFrontmatter, renderEmail, type EmailContent } from './markdown.js';
 
 interface SyncCounts {
@@ -41,24 +43,10 @@ interface ExistingFile {
 // mismatch can't delete a still-live email.
 const PRUNE_BOUNDARY_MARGIN_MS = 24 * 60 * 60 * 1000;
 
-// In-place progress line, TTY only: piped output stays clean (matching the
-// ansi.ts helpers, which also degrade to plain text off-TTY). Overwrites
-// itself with \r and is cleared before any real line is printed.
-class ProgressLine {
-  private active = false;
-
-  update(text: string): void {
-    if (!process.stdout.isTTY) return;
-    process.stdout.write(`\r\x1b[2K  ${dim(text)}`);
-    this.active = true;
-  }
-
-  clear(): void {
-    if (!this.active) return;
-    process.stdout.write('\r\x1b[2K');
-    this.active = false;
-  }
-}
+// Accounts sync together, but not unboundedly: each one holds a connection and
+// fans out its own downloads, so the real ceiling is what the machine and the
+// providers tolerate rather than how many accounts happen to be configured.
+const ACCOUNT_CONCURRENCY = 4;
 
 function computeSinceDate(now: Date = new Date()): Date {
   // Month -1 in January normalizes to December of the prior year.
@@ -129,13 +117,33 @@ function writeFileAtomic(path: string, content: string): void {
   renameSync(tmp, path);
 }
 
+// Takes the first free name in the date+subject series by *creating* it rather
+// than testing for it. Within one run the search and the write are not
+// separated by an await, so concurrent downloads cannot interleave between
+// them — but two runs over the same sync path (a cron job overlapping a manual
+// one) are a different matter, and there the loser of an existsSync race
+// silently overwrites the winner's email. An exclusive create can only succeed
+// for one of them. The claim is an empty file, replaced by the real content
+// moments later.
+function claimFreePath(dir: string, date: Date, subject: string): string {
+  for (let n = 1; ; n++) {
+    const path = join(dir, buildFilename(date, subject, n === 1 ? undefined : String(n)));
+    try {
+      closeSync(openSync(path, 'wx'));
+      return path;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+    }
+  }
+}
+
 function chooseTargetPath(
   dir: string,
   email: EmailContent,
   fetchDate: Date,
   existing: Map<string, ExistingFile>,
   forceRewrite: boolean,
-): { path: string; alreadySynced: boolean } {
+): { path: string; alreadySynced: boolean; claimed: boolean } {
   const date = email.date ?? fetchDate;
   const subject = email.subject;
   const messageId = email.messageId;
@@ -145,70 +153,95 @@ function chooseTargetPath(
     // deterministic hash of from/date/subject means existsSync === synced.
     const name = buildFilename(date, subject, fallbackHash(email.from, date.toISOString(), subject));
     const path = join(dir, name);
-    return { path, alreadySynced: !forceRewrite && existsSync(path) };
+    return { path, alreadySynced: !forceRewrite && existsSync(path), claimed: false };
   }
 
   // Force-rewrite overwrites the file this email already lives in, keeping
   // its name stable rather than minting a duplicate under a fresh suffix.
   if (forceRewrite) {
     const prior = existing.get(messageId);
-    if (prior) return { path: join(dir, prior.name), alreadySynced: false };
+    if (prior) return { path: join(dir, prior.name), alreadySynced: false, claimed: false };
   }
 
   // Message-id dedupe already ran against the listing, so an existing file
-  // here is a different email that happens to share date + subject — pick a
-  // free name. The counter goes in the suffix slot, after the slug: appending
-  // it to the subject doesn't work because slugify truncates long subjects to
-  // 80 chars, slicing the counter off and looping forever on the same name.
-  let path = join(dir, buildFilename(date, subject));
-  for (let n = 2; existsSync(path); n++) {
-    path = join(dir, buildFilename(date, subject, String(n)));
-  }
-  return { path, alreadySynced: false };
+  // here is a different email that happens to share date + subject — take the
+  // next free name. The counter goes in the suffix slot, after the slug:
+  // appending it to the subject doesn't work because slugify truncates long
+  // subjects to 80 chars, slicing the counter off and looping forever on the
+  // same name.
+  return { path: claimFreePath(dir, date, subject), alreadySynced: false, claimed: true };
 }
 
-// Downloads the messages not already on disk and writes them out. One at a
-// time rather than in bulk: the progress line can update before each download,
-// and one bad message can't stall the rest.
+// Downloads the messages not already on disk and writes them out, as many at
+// once as the backend says it can serve (one, for a backend on a single
+// stateful connection). Per message rather than in bulk so one bad message
+// can't stall the rest — every failure is counted and reported, never thrown,
+// which also keeps it from aborting the other downloads in flight.
 async function downloadAll(
   source: MailSource,
   refs: MessageRef[],
   dir: string,
   existing: Map<string, ExistingFile>,
   forceRewrite: boolean,
-  progress: ProgressLine,
+  progress: ProgressGroup,
+  label: string,
   counts: SyncCounts,
 ): Promise<void> {
-  for (const [i, ref] of refs.entries()) {
-    progress.update(`${ref.mailbox}: downloading ${i + 1}/${refs.length}`);
+  const bar = progress.bar(`${label} download`, refs.length);
+  let done = 0;
+
+  await mapPool(refs, source.maxConcurrentFetches ?? 1, async (ref) => {
     try {
       const email = await source.fetchContent(ref);
-      const { path, alreadySynced } = chooseTargetPath(dir, email, new Date(), existing, forceRewrite);
+      const { path, alreadySynced, claimed } = chooseTargetPath(dir, email, new Date(), existing, forceRewrite);
       if (alreadySynced) {
         counts.skipped++;
-        continue;
+        return;
       }
-      writeFileAtomic(path, renderEmail(email, new Date(), ref.mailbox));
+      try {
+        writeFileAtomic(path, renderEmail(email, new Date(), ref.mailbox));
+      } catch (err) {
+        // The name was claimed with an empty file; leaving that behind would
+        // look like a synced email with no content on the next run.
+        if (claimed) rmSync(path, { force: true });
+        throw err;
+      }
       counts.written++;
     } catch (err) {
       counts.errors++;
-      progress.clear(); // don't let the error line splice into the progress line
-      console.error(red(`  error on ${ref.mailbox} ${ref.handle}: ${errorMessage(err)}`));
+      progress.log(red(`  error on ${ref.mailbox} ${ref.handle}: ${errorMessage(err)}`));
+    } finally {
+      // Counted on completion, not by position: with several in flight the
+      // index says nothing about how much is actually finished.
+      bar.update(++done, ref.mailbox);
     }
-  }
+  });
 }
 
-async function syncAccount(account: Account, since: Date, forceRewrite: boolean): Promise<SyncCounts> {
+async function syncAccount(
+  account: Account,
+  since: Date,
+  forceRewrite: boolean,
+  progress: ProgressGroup,
+): Promise<SyncCounts> {
   const counts: SyncCounts = { written: 0, skipped: 0, deleted: 0, errors: 0 };
   const dir = account.syncPath;
   mkdirSync(dir, { recursive: true });
   const existing = collectExistingFiles(dir);
 
   const source = await openMailSource(account);
-  const progress = new ProgressLine();
   try {
+    // Backends report the listing per mailbox, restarting the count for each
+    // one, so a new mailbox starts a new bar instead of rewinding the current
+    // one. Gmail reports a single synthetic mailbox, giving one bar.
+    let scanned: string | null = null;
+    let scanBar: ProgressBar | null = null;
     const onProgress = (mailbox: string, checked: number, total: number): void => {
-      progress.update(`${mailbox}: checking ${checked}/${total}`);
+      if (mailbox !== scanned) {
+        scanned = mailbox;
+        scanBar = progress.bar(`${account.label} scan`, total);
+      }
+      scanBar?.update(checked, mailbox);
     };
 
     // Ask the backend for just the changes when it can supply them. A
@@ -224,8 +257,7 @@ async function syncAccount(account: Account, since: Date, forceRewrite: boolean)
 
     for (const problem of listing.problems) {
       counts.errors++;
-      progress.clear();
-      console.error(red(`  ${problem}`));
+      progress.log(red(`  ${problem}`));
     }
 
     // Force-rewrite ignores what is on disk so everything is re-downloaded.
@@ -235,7 +267,7 @@ async function syncAccount(account: Account, since: Date, forceRewrite: boolean)
     const pending = listing.refs.filter((ref) => ref.messageId === '' || !known.has(ref.messageId));
     counts.skipped = listing.refs.length - pending.length;
 
-    await downloadAll(source, pending, dir, existing, forceRewrite, progress, counts);
+    await downloadAll(source, pending, dir, existing, forceRewrite, progress, account.label, counts);
 
     if (changes !== null) {
       counts.deleted = pruneReportedDeletions(dir, existing, changes.removedMessageIds, since);
@@ -251,7 +283,6 @@ async function syncAccount(account: Account, since: Date, forceRewrite: boolean)
     if (counts.errors === 0 && source.commit !== undefined) await source.commit();
     return counts;
   } finally {
-    progress.clear();
     await source.close();
   }
 }
@@ -266,22 +297,41 @@ export async function runSync(config: Config, since: Date = computeSinceDate(), 
 
   console.log(dim(`Syncing all mail since ${since.toDateString()}${forceRewrite ? ' (force-rewrite: overwriting already-synced files)' : ''}`));
 
+  // Accounts share nothing — separate servers, separate connections, separate
+  // sync paths — so they run together, each with its own bars in one group.
+  // The one thing they do share is the config file, when an OAuth account
+  // caches a refreshed access token; core/config.ts takes a lock for that.
+  const progress = new ProgressGroup();
+  const results = await mapPool(config.accounts, ACCOUNT_CONCURRENCY, async (account) => {
+    try {
+      return { account, counts: await syncAccount(account, since, forceRewrite, progress) };
+    } catch (err) {
+      // Caught rather than thrown: one unreachable server must not cancel the
+      // accounts that are working.
+      return { account, failure: errorMessage(err) };
+    }
+  });
+  // Every bar is finished before a single summary line is written, so the
+  // results land on a terminal nothing is still drawing on — and in config
+  // order, however the runs interleaved.
+  progress.stop();
+
   let allOk = true;
   const totals: SyncCounts = { written: 0, skipped: 0, deleted: 0, errors: 0 };
-  for (const account of config.accounts) {
-    try {
-      const counts = await syncAccount(account, since, forceRewrite);
-      totals.written += counts.written;
-      totals.skipped += counts.skipped;
-      totals.deleted += counts.deleted;
-      totals.errors += counts.errors;
-      const errorPart = counts.errors > 0 ? red(`${counts.errors} errors`) : green('0 errors');
-      console.log(`${bold(account.label)}: ${counts.written} new · ${counts.skipped} skipped · ${counts.deleted} deleted · ${errorPart} → ${account.syncPath}`);
-      if (counts.errors > 0) allOk = false;
-    } catch (err) {
+  for (const result of results) {
+    if ('failure' in result) {
       allOk = false;
-      console.error(`${bold(account.label)}: ${red(`FAILED — ${errorMessage(err)}`)}`);
+      console.error(`${bold(result.account.label)}: ${red(`FAILED — ${result.failure}`)}`);
+      continue;
     }
+    const { account, counts } = result;
+    totals.written += counts.written;
+    totals.skipped += counts.skipped;
+    totals.deleted += counts.deleted;
+    totals.errors += counts.errors;
+    const errorPart = counts.errors > 0 ? red(`${counts.errors} errors`) : green('0 errors');
+    console.log(`${bold(account.label)}: ${counts.written} new · ${counts.skipped} skipped · ${counts.deleted} deleted · ${errorPart} → ${account.syncPath}`);
+    if (counts.errors > 0) allOk = false;
   }
   console.log(dim(`Total: ${totals.written} new · ${totals.skipped} skipped · ${totals.deleted} deleted · ${totals.errors} errors`));
   return allOk;

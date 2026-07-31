@@ -69,6 +69,14 @@ export interface MailSource {
 
   fetchContent(ref: MessageRef): Promise<EmailContent>;
 
+  // How many fetchContent calls this backend can have in flight at once.
+  // Absent means one, which is the safe default: a backend built on a single
+  // connection with a selected mailbox cannot serve two fetches concurrently,
+  // because each would re-select underneath the other. A backend whose fetches
+  // are independent (one HTTP request per message) raises it, and the engine
+  // downloads that many at a time.
+  readonly maxConcurrentFetches?: number;
+
   // Archives a batch, so a backend can group the work (one mailbox open per
   // mailbox for IMAP, one batch modify for Gmail). Outcomes are positional.
   archive(requests: ArchiveRequest[]): Promise<ArchiveOutcome[]>;

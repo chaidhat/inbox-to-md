@@ -63,7 +63,7 @@ printf '%s\n' "$IMAP_APP_PASSWORD" | inbox-to-md auth add \
   --sync-path ~/code/obsidian/Emails/Fastmail
 ```
 
-Treat an exit code of `0` and JSON with `"ok":true` on stdout as success. On failure, read the JSON error from stderr and use its message to correct the request. Never echo or log a password. Although `--password <password>` is supported, prefer `--password-stdin` because command-line arguments may appear in process listings and shell history.
+Treat an exit code of `0` and an `ok` field of `true` in the stdout JSON as success. The JSON is indented across several lines, so parse it rather than matching a substring. On failure, read the JSON error from stderr and use its message to correct the request. Never echo or log a password. Although `--password <password>` is supported, prefer `--password-stdin` because command-line arguments may appear in process listings and shell history.
 
 Each listed account reports a `transport`, which is how it fetches mail: `gmail` (the Gmail HTTP API, chosen automatically for Google OAuth accounts because it syncs only what changed since the last run) or `imap` (everything else). It is derived, so nothing needs configuring; pass `--transport imap` to `add` or `edit` to force the IMAP path for a Google account.
 

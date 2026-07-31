@@ -69,11 +69,32 @@ inbox-to-md sync --since 2026-01-01
 inbox-to-md sync --force-rewrite
 ```
 
+`sync` and `compact` draw progress bars while they work — one per phase, so a
+long run shows what it is doing rather than sitting silent. The bars and any
+mid-run errors go to stderr and only appear on a terminal: redirecting a run to
+a file leaves stdout carrying just the summary lines, so pipe both streams
+(`inbox-to-md compact > run.log 2>&1`) if you want the detail too.
+
 `sync` covers every mailbox the account can see within the date window — inbox,
 sent, and any other folder or label — except Trash and Spam. A message that
 appears in several mailboxes is written once, with the mailbox it was first seen
 in recorded in its frontmatter. An email that disappears from the server is
 removed from disk on the next clean sync.
+
+### Concurrency
+
+Accounts sync in parallel (up to 4 at a time), each drawing its own progress
+bars. Within an account, how many messages are fetched at once is the backend's
+call: the `gmail` transport does 8, because each fetch is an independent HTTPS
+request, while `imap` does one, because it holds a single connection whose
+selected mailbox two concurrent fetches would move underneath each other.
+`compact` keeps 8 model calls in flight within a layer; layers are sequential
+by nature, since each one compacts the previous one's output.
+
+Because parallel accounts can finish an OAuth token refresh at the same moment,
+config writes take a lock (`config.json.lock`) and are applied as one
+read-modify-write. That also makes it safe to run `auth add` while a sync is
+going. If a run is killed hard, a stale lock is taken over after 30 seconds.
 
 ### Transports
 
@@ -105,8 +126,8 @@ directory) and the next run rebuilds it.
 
 ## Authentication
 
-`inbox-to-md auth` takes flags and returns JSON on stdout; errors are JSON on stderr
-with a nonzero exit status. It never prompts, so it is safe to drive from a script or
+`inbox-to-md auth` takes flags and returns indented JSON on stdout; errors are JSON on
+stderr with a nonzero exit status. It never prompts, so it is safe to drive from a script or
 an agent. Accounts are verified with a real IMAP login before they are saved, and
 passwords and tokens are never included in the output.
 

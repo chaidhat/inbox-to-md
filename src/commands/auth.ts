@@ -22,7 +22,7 @@ import {
   CONFIG_PATH,
   expandTilde,
   loadConfig,
-  saveConfig,
+  updateConfig,
   type Account,
   type AuthMethod,
   type Config,
@@ -133,14 +133,21 @@ function publicAccount(account: Account): PublicAccount {
   return safe;
 }
 
+// Indented so a person reading the terminal can scan the result. Each stream
+// still carries exactly one JSON document per run, so `jq` and friends parse
+// it unchanged.
+function formatJson(value: unknown): string {
+  return JSON.stringify(value, null, 2) + '\n';
+}
+
 function output(value: unknown): void {
-  process.stdout.write(JSON.stringify(value) + '\n');
+  process.stdout.write(formatJson(value));
 }
 
 class HandledError extends Error {}
 
 function fail(message: string): never {
-  process.stderr.write(JSON.stringify({ ok: false, error: message }) + '\n');
+  process.stderr.write(formatJson({ ok: false, error: message }));
   process.exitCode = 1;
   throw new HandledError();
 }
@@ -275,10 +282,16 @@ function findAccount(config: Config, id: string): { account: Account; index: num
   return { account: config.accounts[index], index };
 }
 
-function commit(config: Config, index: number | null, account: Account, action: string): void {
-  if (index === null) config.accounts.push(account);
-  else config.accounts[index] = account;
-  saveConfig(config);
+// Writes by account id rather than by the index it had when the config was
+// loaded: `add --auth oauth` holds its snapshot across the whole consent
+// screen, and a sync caching a refreshed token in the meantime would shift
+// those positions out from under us.
+async function commit(account: Account, action: string): Promise<void> {
+  await updateConfig((config) => {
+    const index = config.accounts.findIndex((a) => a.id === account.id);
+    if (index === -1) config.accounts.push(account);
+    else config.accounts[index] = account;
+  });
   output({ ok: true, action, account: publicAccount(account), configPath: CONFIG_PATH });
 }
 
@@ -299,7 +312,7 @@ async function add(config: Config, flags: Flags): Promise<void> {
     const credential: CredentialInput = { auth: 'password', password: readPassword(flags, true)! };
     const draft = buildAccount(fields, credential);
     await verifyAccount(draft);
-    commit(config, null, { id: randomUUID(), ...draft }, 'added');
+    await commit({ id: randomUUID(), ...draft }, 'added');
     return;
   }
 
@@ -318,7 +331,7 @@ async function add(config: Config, flags: Flags): Promise<void> {
   });
   const draft = buildAccount(fields, await authorizeOAuth(flags, fields, client));
   await verifyAccount(draft);
-  commit(config, null, { id: randomUUID(), ...draft }, 'added');
+  await commit({ id: randomUUID(), ...draft }, 'added');
 }
 
 async function edit(config: Config, flags: Flags): Promise<void> {
@@ -348,7 +361,7 @@ async function edit(config: Config, flags: Flags): Promise<void> {
 
   const draft = buildAccount(fields, credential);
   await verifyAccount(draft);
-  commit(config, index, { id: existing.id, ...draft }, 'edited');
+  await commit({ id: existing.id, ...draft }, 'edited');
 }
 
 // Re-runs the consent flow for an existing OAuth account, keeping its
@@ -376,14 +389,18 @@ async function reauth(config: Config, flags: Flags): Promise<void> {
   });
   const draft = buildAccount(fields, await authorizeOAuth(flags, fields, client));
   await verifyAccount(draft);
-  commit(config, index, { id: oauthAccount.id, ...draft }, 'reauthorized');
+  await commit({ id: oauthAccount.id, ...draft }, 'reauthorized');
 }
 
-function remove(config: Config, flags: Flags): void {
+async function remove(config: Config, flags: Flags): Promise<void> {
   rejectFlags('delete', flags, ['id'], []);
-  const { account, index } = findAccount(config, required(flags, 'id'));
-  config.accounts.splice(index, 1);
-  saveConfig(config);
+  // Looked up first so an unknown id is reported without taking the lock, then
+  // deleted by id inside it — same reason `commit` does not trust an index.
+  const { account } = findAccount(config, required(flags, 'id'));
+  await updateConfig((current) => {
+    const index = current.accounts.findIndex((a) => a.id === account.id);
+    if (index !== -1) current.accounts.splice(index, 1);
+  });
   output({ ok: true, action: 'deleted', account: publicAccount(account), configPath: CONFIG_PATH });
 }
 
@@ -411,12 +428,12 @@ async function main(): Promise<void> {
   } else if (action === 'reauth') {
     await reauth(config, flags);
   } else {
-    remove(config, flags);
+    await remove(config, flags);
   }
 }
 
 main().catch((err: unknown) => {
   if (err instanceof HandledError) return;
-  process.stderr.write(JSON.stringify({ ok: false, error: errorMessage(err) }) + '\n');
+  process.stderr.write(formatJson({ ok: false, error: errorMessage(err) }));
   process.exitCode = 1;
 });
