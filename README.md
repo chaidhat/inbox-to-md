@@ -85,7 +85,7 @@ removed from disk on the next clean sync.
 
 Accounts sync in parallel (up to 4 at a time), each drawing its own progress
 bars. Within an account, how many messages are fetched at once is the backend's
-call: the `gmail` transport does 8, because each fetch is an independent HTTPS
+call: the `gmail` transport does 64, because each fetch is an independent HTTPS
 request, while `imap` does one, because it holds a single connection whose
 selected mailbox two concurrent fetches would move underneath each other.
 `compact` keeps 8 model calls in flight within a layer; layers are sequential
