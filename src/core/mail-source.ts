@@ -72,9 +72,10 @@ export interface MailSource {
   // How many fetchContent calls this backend can have in flight at once.
   // Absent means one, which is the safe default: a backend built on a single
   // connection with a selected mailbox cannot serve two fetches concurrently,
-  // because each would re-select underneath the other. A backend whose fetches
-  // are independent (one HTTP request per message) raises it, and the engine
-  // downloads that many at a time.
+  // because each would re-select underneath the other. A backend raises it once
+  // its fetches are genuinely independent — one HTTP request per message, or a
+  // pool with a connection per fetch — and the engine downloads that many at a
+  // time.
   readonly maxConcurrentFetches?: number;
 
   // Archives a batch, so a backend can group the work (one mailbox open per
