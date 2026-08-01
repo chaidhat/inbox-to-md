@@ -16,6 +16,18 @@ This is in order of importance, if any rule contradicts one another, always adhe
 2. code must be **maintainable** -- a human who doesn't know the codebase who comes to adjust your code must be able to know what they are doing. the core tactic is high cohesion, low coupling: related behaviors grouped together inside the same module, different modules kept independent. Don't Repeat Yourself (DRY) follows from this, but don't over-apply it -- the wrong abstraction costs more than a little duplication, so prefer duplicating until the shared shape is obvious rather than coupling two things that only look the same today.
 3. code must be **consistent** -- should be consistent with the other code in the repository. If you implement a flag in a CLI script, then it should look like how other flags are implemented inside a CLI script. This is why we created the rest of the document below. One exception: match local conventions, but don't copy a clear anti-pattern just because it's already there -- flag it instead of propagating it.
 
-### Keep authentication surfaces in sync
+### One authentication surface, two auth methods
 
-`inbox-to-md auth` is the interactive interface and `inbox-to-md authcli` is the non-interactive interface for agents and scripts. If you update either one, update and test the other too. Account fields, validation, IMAP verification, persistence, and add/edit/delete behavior must stay equivalent; keep shared behavior in shared modules. Interface-specific presentation may differ: `auth` uses a TUI, while `authcli` uses flags and JSON output.
+`inbox-to-md auth` is the only authentication interface, and it is non-interactive: flags in, JSON on stdout, JSON errors on stderr, never a prompt. Do not add a TUI or an interactive fallback. The single unavoidable human step is the Google consent screen during `add --auth oauth` / `reauth`, and even that prints its URL to stderr so stdout stays machine-readable.
+
+Accounts authenticate with either a password or Google OAuth, and the two must stay equivalent in everything except how the credential is obtained: field validation, verification before saving, persistence, and add/edit/delete behavior. Keep that shared behavior in the shared modules — `core/config.ts` (schema and migrations), `core/account-auth.ts` (validation and verification), `integration/open.ts` (the only place an account becomes a connection) — rather than branching inside the command. When you change one method, exercise the other, and update both `README.md` and `SKILL.md`, which document them together.
+
+### Layout: core, commands, integration
+
+`src/` is split three ways, and the direction of dependency is the point:
+
+1. `src/commands/` — one file per CLI verb. Parses argv, sets an exit status, and calls into core. No protocol or business logic.
+2. `src/core/` — the engines (sync, archive, compact) plus config, markdown rendering, and the `MailSource` interface. Provider-agnostic: nothing here knows what IMAP or the Gmail API is. The one exception is that the engines import `integration/open.ts` to obtain a source, which is the deliberate composition seam.
+3. `src/integration/` — one folder per backend (`imap/`, `gmail/`), plus the shared Google OAuth machinery. Each implements `MailSource` and knows exactly one protocol and nothing about markdown files.
+
+A backend is chosen in `integration/open.ts` and nowhere else. Adding a transport means adding a folder and a branch there — never a conditional inside an engine. When a backend can do something cheaper (Gmail's incremental history pull), express it through an optional method on `MailSource`, so a backend that lacks it degrades to the general path instead of forcing every caller to special-case it.

@@ -2,8 +2,7 @@
 // `inbox-to-md <command>` — the npm bin entry. Dispatches to the same entry
 // modules the npm scripts use:
 //
-//   inbox-to-md auth                     manage IMAP accounts (interactive TUI)
-//   inbox-to-md authcli <action> [...]   manage IMAP accounts (flags + JSON)
+//   inbox-to-md auth <action> [...]      manage accounts (flags + JSON, never prompts)
 //   inbox-to-md sync [flags]             sync inboxes to markdown (default command)
 //   inbox-to-md compact                  compact synced emails into one digest
 //   inbox-to-md archive <md dir>         archive the emails behind the .md files
@@ -15,18 +14,17 @@
 import { createRequire } from 'module';
 
 const COMMANDS: Record<string, string> = {
-  sync: './index.js',
-  auth: './auth.js',
-  authcli: './authcli.js',
-  compact: './compact.js',
-  archive: './archive.js',
+  sync: './commands/sync.js',
+  auth: './commands/auth.js',
+  compact: './commands/compact.js',
+  archive: './commands/archive.js',
 };
 
 const USAGE = `Usage: inbox-to-md <command>
 
 Commands:
-  auth                 manage IMAP accounts (interactive TUI)
-  authcli <action>     manage IMAP accounts non-interactively (flags + JSON)
+  auth <action>        manage accounts non-interactively (flags + JSON)
+                       list | add | edit | delete | reauth — see \`auth --help\`
   sync [--since YYYY-MM-DD] [--force-rewrite]
                        sync inboxes to markdown (default command)
   compact              compact synced emails into one digest per account

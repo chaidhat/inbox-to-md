@@ -1,7 +1,7 @@
 {
   "name": "inbox-to-md",
   "version": "0.1.1",
-  "description": "Sync IMAP inboxes to Markdown files — one file per email, with YAML frontmatter",
+  "description": "Sync IMAP inboxes (OAuth or password) to Markdown files — one file per email, with YAML frontmatter",
   "type": "module",
   "bin": {
     "inbox-to-md": "dist/cli.js"
@@ -14,6 +14,8 @@
   },
   "keywords": [
     "imap",
+    "oauth",
+    "gmail",
     "email",
     "markdown",
     "inbox",
@@ -30,16 +32,17 @@
   },
   "scripts": {
     "build": "tsc",
+    "prebuild": "rm -rf dist",
     "prepublishOnly": "npm run build",
-    "auth": "tsx src/auth.ts",
-    "authcli": "tsx src/authcli.ts",
-    "dev": "tsx src/index.ts",
-    "start": "tsx src/index.ts",
-    "archive": "tsx src/archive.ts",
-    "compact": "tsx src/compact.ts"
+    "auth": "tsx src/commands/auth.ts",
+    "dev": "tsx src/commands/sync.ts",
+    "start": "tsx src/commands/sync.ts",
+    "archive": "tsx src/commands/archive.ts",
+    "compact": "tsx src/commands/compact.ts"
   },
   "license": "MIT",
   "devDependencies": {
+    "@types/cli-progress": "^3.11.6",
     "@types/node": "^26.1.1",
     "@types/turndown": "^5.0.6",
     "tsx": "^4.19.0",
@@ -47,6 +50,7 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.211",
+    "cli-progress": "^3.12.0",
     "imapflow": "^1.4.7",
     "turndown": "^7.2.4"
   }

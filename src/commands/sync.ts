@@ -4,9 +4,10 @@
 //   npm start -- --since 2026-01-01    sync since a specific date
 //   npm start -- --force-rewrite       re-download and overwrite already-synced files
 
-import { red } from './ansi.js';
-import { loadConfig } from './config.js';
-import { runSync } from './sync.js';
+import { red } from '../core/ansi.js';
+import { loadConfig } from '../core/config.js';
+import { errorMessage } from '../core/errors.js';
+import { runSync } from '../core/sync.js';
 
 const USAGE = 'Usage: inbox-to-md sync [--since YYYY-MM-DD] [--force-rewrite]';
 
@@ -52,7 +53,7 @@ async function main(): Promise<void> {
   process.exitCode = ok ? 0 : 1;
 }
 
-main().catch((err) => {
-  console.error(red(err instanceof Error ? err.message : String(err)));
+main().catch((err: unknown) => {
+  console.error(red(errorMessage(err)));
   process.exitCode = 1;
 });
