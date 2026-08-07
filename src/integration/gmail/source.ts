@@ -91,11 +91,14 @@ export class GmailMailSource implements MailSource {
   // number: measured against a real account, 128 messages took 22.4s at 1,
   // 2.9s at 8, and 0.67s at 64.
   //
-  // 64 is above Gmail's published per-user budget of 250 quota units/second
-  // (messages.get costs 5, so ~50 requests/second). A short burst rides
-  // through on the moving average; a long sync will draw 429s, and nothing
-  // here retries them yet — see the note on GmailApiError in api.ts.
-  readonly maxConcurrentFetches = 64;
+  // 8, not 64, because Gmail's per-user budget is 250 quota units/second and
+  // messages.get costs 5 — about 50 requests/second. At 8 in flight a real
+  // sync measured ~44/second, just inside that; 64 drew RESOURCE_EXHAUSTED
+  // ("Too many concurrent requests for user") and failed whole accounts. The
+  // backoff in api.ts now absorbs a burst that overshoots anyway, so this is
+  // the width that keeps us from leaning on it constantly rather than the only
+  // thing standing between a sync and a 429.
+  readonly maxConcurrentFetches = 8;
 
   private constructor(
     private readonly api: GmailApi,
@@ -121,7 +124,24 @@ export class GmailMailSource implements MailSource {
         return { handle: gmailId, messageId: known.messageId, mailbox: known.mailbox };
       }
     }
-    const message = await this.api.getMessage(gmailId, 'metadata');
+    let message: GmailMessage;
+    try {
+      message = await this.api.getMessage(gmailId, 'metadata');
+    } catch (err) {
+      // A 404 here is an answer, not a failure: the message was permanently
+      // deleted between Gmail recording the change and us reading it, which is
+      // ordinary for a history feed that can be hours old. Treating it as an
+      // error wedges the account — listChanges lets errors propagate, the sync
+      // then fails, the resume point never advances, and every later run
+      // replays the same dead id and fails the same way.
+      //
+      // The index entry is deliberately left in place, unlike the hidden case
+      // below: a message that was deleted appears in this history range both as
+      // a change and as a deletion, and translating that deletion back to a
+      // file on disk needs the Message-ID only the index still holds.
+      if (err instanceof GmailApiError && err.status === 404) return null;
+      throw err;
+    }
     if (isHidden(message)) {
       this.state.forget(gmailId);
       return null;

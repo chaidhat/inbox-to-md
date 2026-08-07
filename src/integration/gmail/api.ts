@@ -8,6 +8,41 @@ import { errorMessage } from '../../core/errors.js';
 export const GMAIL_API_BASE = 'https://gmail.googleapis.com/gmail/v1/users/me';
 const REQUEST_TIMEOUT_MS = 30_000;
 
+// Gmail sheds load by rejecting rather than queueing, so a burst of parallel
+// reads comes back as 429s rather than as slower responses. Google's documented
+// remedy is exponential backoff, and it is the only one available to a client:
+// there is no way to ask how much budget is left. Five attempts spans roughly
+// 8s of waiting in the worst case, which clears the per-second quota windows
+// this can trip; a limit that survives none of that is a genuine outage and is
+// better reported than retried forever.
+const MAX_ATTEMPTS = 5;
+const BASE_BACKOFF_MS = 500;
+const MAX_BACKOFF_MS = 32_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Full jitter: every client that got throttled together would otherwise wake
+// together and throttle each other again. Retry-After wins when the server
+// sends one, since that is Gmail telling us what it actually wants.
+function backoffMs(attempt: number, retryAfterMs: number | null): number {
+  if (retryAfterMs !== null) return Math.min(retryAfterMs, MAX_BACKOFF_MS);
+  return Math.random() * Math.min(BASE_BACKOFF_MS * 2 ** (attempt - 1), MAX_BACKOFF_MS);
+}
+
+// Retry-After is either delta-seconds or an HTTP date. A malformed or negative
+// value is ignored rather than trusted, so a bad header degrades to our own
+// backoff instead of pinning the sync or making it hammer.
+function parseRetryAfter(header: string | null): number | null {
+  if (header === null || header.trim() === '') return null;
+  const seconds = Number(header);
+  if (Number.isFinite(seconds)) return seconds >= 0 ? seconds * 1000 : null;
+  const date = Date.parse(header);
+  if (Number.isNaN(date)) return null;
+  return Math.max(0, date - Date.now());
+}
+
 // Test hook, not a proxy setting: it lets the verification harness point the
 // client at a fake Gmail. Only loopback is accepted, because this variable
 // decides where an OAuth bearer token gets sent — a remote value would be a
@@ -32,13 +67,28 @@ export function resolveApiBase(env: NodeJS.ProcessEnv = process.env): string {
 }
 
 // Carries the HTTP status so callers can distinguish the cases they must
-// handle from genuine failures — notably 404 from history, which means "that
-// resume point is too old" rather than "something broke".
+// handle from genuine failures — notably 404, which means "that thing is gone"
+// rather than "something broke": from history it means the resume point has
+// expired, and from a message read it means the message was deleted.
 export class GmailApiError extends Error {
-  constructor(message: string, readonly status: number, readonly reason: string) {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly reason: string,
+    // Only set for throttling responses that carried a Retry-After.
+    readonly retryAfterMs: number | null = null,
+  ) {
     super(message);
     this.name = 'GmailApiError';
   }
+}
+
+// Throttling and server faults are the server saying "not now"; a network blip
+// is the same answer from the wire. Everything else — a bad request, a revoked
+// grant, a deleted message — will fail identically however many times it is
+// asked, so retrying it only delays the error the caller needs to see.
+function isRetryable(err: GmailApiError): boolean {
+  return err.status === 429 || err.status >= 500 || err.reason === 'unreachable';
 }
 
 export interface GmailHeader {
@@ -80,7 +130,22 @@ export class GmailApi {
     private readonly base: string = resolveApiBase(),
   ) {}
 
+  // Retries what the server said it might serve later, and nothing else. Every
+  // request this class makes is safe to repeat: the reads are reads, and the
+  // one write removes a label, which lands the same way however often it is
+  // applied.
   private async request(path: string, init?: RequestInit): Promise<unknown> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.attempt(path, init);
+      } catch (err) {
+        if (!(err instanceof GmailApiError) || attempt >= MAX_ATTEMPTS || !isRetryable(err)) throw err;
+        await sleep(backoffMs(attempt, err.retryAfterMs));
+      }
+    }
+  }
+
+  private async attempt(path: string, init?: RequestInit): Promise<unknown> {
     let response: Response;
     try {
       response = await fetch(`${this.base}${path}`, {
@@ -111,7 +176,12 @@ export class GmailApi {
       const failure = parsed as { error?: { message?: unknown; status?: unknown } };
       const reason = typeof failure.error?.status === 'string' ? failure.error.status : `http_${response.status}`;
       const detail = typeof failure.error?.message === 'string' ? `: ${failure.error.message}` : '';
-      throw new GmailApiError(`Gmail API rejected the request (${reason})${detail}`, response.status, reason);
+      throw new GmailApiError(
+        `Gmail API rejected the request (${reason})${detail}`,
+        response.status,
+        reason,
+        parseRetryAfter(response.headers.get('retry-after')),
+      );
     }
     return parsed;
   }
